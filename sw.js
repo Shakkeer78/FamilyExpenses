@@ -1,7 +1,7 @@
 /* Family Expenses service worker.
    Change VERSION whenever you upload new app files so phones pick up the update. */
-const VERSION='fe-5.0.0';
-const SHELL=['./','./index.html','./manifest.webmanifest','./icons/icon-192.png','./icons/icon-512.png','./icons/apple-touch-icon.png'];
+const VERSION='fe-5.1.0';
+const SHELL=['./','./index.html','./manifest.webmanifest','./icon-192.png','./icon-512.png','./apple-touch-icon.png'];
 const CHART='https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js';
 
 self.addEventListener('install',e=>{

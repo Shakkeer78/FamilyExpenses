@@ -12,8 +12,8 @@
 <meta name="format-detection" content="telephone=no">
 <title>Family Expenses</title>
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="icon" type="image/png" href="icons/icon-192.png">
-<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous" defer></script>
 <style>
 :root{
@@ -183,6 +183,36 @@ details.more[open] summary:before{content:"－ "}
 .connect-sub{text-align:center;color:var(--muted);font-size:14px;margin:6px 10px 18px;line-height:1.5}
 code{background:#f2f4f7;padding:1px 5px;border-radius:5px;font-size:13px}
 
+/* v5.1 */
+.seg{display:flex;background:#e9edf5;border-radius:13px;padding:4px;margin:0 0 10px}
+.seg button{flex:1;border:0;background:transparent;padding:10px 6px;border-radius:10px;font-weight:800;font-size:14px;color:var(--muted)}
+.seg button.on{background:#fff;color:var(--ink);box-shadow:0 1px 4px rgba(16,24,40,.08)}
+.chips{display:flex;gap:7px;overflow-x:auto;margin:0 -14px 8px;padding:2px 14px 6px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chips button{flex:none;border:1px solid #e3e8f0;background:#fff;border-radius:20px;padding:8px 14px;font-weight:750;font-size:13px;color:var(--muted)}
+.chips button.on{background:var(--blue);border-color:var(--blue);color:#fff}
+.stat small{display:block;font-size:11px;color:var(--muted);margin-top:4px;line-height:1.35}
+.delta-up{color:var(--red)}.delta-down{color:var(--green)}
+.cnt{font-style:normal;font-weight:650;color:var(--faint);font-size:12px}
+.cols{display:flex;align-items:flex-end;gap:4px;height:160px;padding-top:8px}
+.col{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;min-width:0;border:0;background:transparent;padding:0}
+.col .stk{width:100%;max-width:24px;display:flex;flex-direction:column-reverse;border-radius:6px 6px 2px 2px;overflow:hidden;min-height:2px;background:#eef1f6}
+.col .s1{background:var(--blue)}.col .s2{background:#9bb9fb}
+.col small{font-size:10px;color:var(--muted);margin-top:5px;white-space:nowrap}
+.col.cur small{color:var(--ink);font-weight:800}
+.legend{display:flex;gap:14px;font-size:12px;color:var(--muted);margin-top:10px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+.mrow{position:relative}
+.mrow-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.mrow-head b{font-size:14px;color:var(--muted)}
+.rm{border:0;background:var(--red-bg);color:var(--red);font-weight:800;font-size:12px;padding:6px 10px;border-radius:9px}
+.totalbar{position:sticky;bottom:calc(84px + var(--sb));z-index:20;background:#fff;border-radius:17px;padding:12px 12px 12px 16px;margin-top:12px;box-shadow:0 8px 28px rgba(16,24,40,.13);display:flex;align-items:center;justify-content:space-between;gap:12px}
+.totalbar span{font-size:12px;color:var(--muted);display:block}.totalbar b{font-size:18px}
+.totalbar .primary{min-height:46px;white-space:nowrap}
+.btnrow{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:16px}
+.editing-banner{display:none;background:#fffaeb;color:#93370d;border-radius:12px;padding:9px 12px;font-size:13px;font-weight:700;margin-bottom:10px}
+#add.editing .editing-banner{display:block}
+#add.editing #addMode{display:none}
 @media(max-width:370px){
  .screen{padding-left:11px;padding-right:11px}
  .hero-total{font-size:31px}
@@ -203,7 +233,7 @@ code{background:#f2f4f7;padding:1px 5px;border-radius:5px;font-size:13px}
  <main>
  <!-- CONNECT -->
  <section id="connect" class="screen">
-  <img class="connect-logo" src="icons/icon-192.png" alt="">
+  <img class="connect-logo" src="icon-192.png" alt="">
   <h2 class="connect-title">Connect to your sheet</h2>
   <p class="connect-sub">Enter the web app URL and access key from your Apps Script setup. You only do this once on each phone.</p>
   <div class="card">
@@ -259,39 +289,106 @@ code{background:#f2f4f7;padding:1px 5px;border-radius:5px;font-size:13px}
 
  <!-- ADD -->
  <section id="add" class="screen">
-  <div class="screenhead"><h2>Add expense</h2></div>
-  <div class="card">
+  <div class="screenhead"><h2 id="addTitle">Add expense</h2><button class="chip" id="addCancel" style="display:none" onclick="cancelEdit()">Cancel</button></div>
+  <div class="editing-banner">Editing a saved expense</div>
+  <div class="seg" id="addMode"><button class="on" data-m="single" onclick="setAddMode('single')">One expense</button><button data-m="multi" onclick="setAddMode('multi')">Several at once</button></div>
+
+  <div id="singleForm" class="card">
    <div class="field"><label>AMOUNT (SAR)</label><input class="amount-input" type="number" step="0.01" min="0" id="eamt" inputmode="decimal" placeholder="0.00"></div>
-   <div class="field"><label>DESCRIPTION</label><input id="edesc" list="descList" placeholder="What did you spend on?" autocomplete="off"></div>
-   <div class="field"><label>CATEGORY</label><select id="ecat"></select></div>
+   <div class="field"><label>ITEM / DESCRIPTION</label><input id="edesc" list="descList" placeholder="Type a new item or pick a previous one" autocomplete="off" onchange="descPicked(this,$('ecat'))"></div>
+   <div class="field"><label>CATEGORY</label><select id="ecat" class="catsel" onchange="catPicked(this)"></select></div>
    <div class="twocol">
     <div class="field"><label>DATE</label><input type="date" id="edate"></div>
     <div class="field"><label>PAID BY</label><input id="epaid" list="paidList" placeholder="Optional" autocomplete="off"></div>
    </div>
-   <details class="more"><summary>More options</summary>
+   <details class="more" id="emore"><summary>More options</summary>
     <div class="field"><label>PAYMENT METHOD</label><input id="emethod" list="methodList" placeholder="Cash / Card / Transfer" autocomplete="off"></div>
     <div class="field"><label>SPREAD COST OVER MONTHS</label><input type="number" min="1" value="1" inputmode="numeric" id="espread"></div>
     <div class="field"><label>NOTES</label><input id="enotes" placeholder="Optional"></div>
     <p class="hint">A spread expense keeps the full payment on its date while its cost is allocated across the selected months.</p>
    </details>
    <button class="primary full" id="saveBtn" onclick="saveExpense()">Save expense</button>
+   <button class="danger-btn full" id="delBtn" style="display:none;margin-top:9px" onclick="deleteEditing()">Delete this expense</button>
    <div class="msg" id="saveMsg"></div>
+  </div>
+
+  <div id="multiForm" style="display:none">
+   <div class="card">
+    <p class="hint" style="margin:0 0 12px">These apply to every item below.</p>
+    <div class="twocol">
+     <div class="field"><label>DATE</label><input type="date" id="mdate"></div>
+     <div class="field"><label>PAID BY</label><input id="mpaid" list="paidList" placeholder="Optional" autocomplete="off"></div>
+    </div>
+    <div class="field" style="margin-bottom:0"><label>PAYMENT METHOD</label><input id="mmethod" list="methodList" placeholder="Optional" autocomplete="off"></div>
+   </div>
+   <div id="multiRows"></div>
+   <button class="secondary full" style="margin-top:10px" onclick="addMultiRow(true)">＋ Add another item</button>
+   <div class="msg" id="multiMsg"></div>
+   <div class="totalbar"><div><span id="multiCount">0 items</span><b id="multiTotal">SAR 0.00</b></div><button class="primary" id="multiBtn" onclick="saveMulti()">Save all</button></div>
   </div>
   <datalist id="descList"></datalist><datalist id="paidList"></datalist><datalist id="methodList"></datalist>
  </section>
 
  <!-- ANALYSIS -->
  <section id="analysis" class="screen">
-  <div class="screenhead"><h2>Analysis</h2><button class="chip" onclick="openSheet('analysisSheet')">Filters</button></div>
-  <div class="hint" id="anScope" style="margin:-6px 3px 12px">All time · all categories</div>
-  <div class="stats">
-   <div class="stat"><span>TOTAL</span><b id="anTotal">—</b></div>
-   <div class="stat"><span>TRANSACTIONS</span><b id="anCount">—</b></div>
-   <div class="stat"><span>AVERAGE</span><b id="anAvg">—</b></div>
-   <div class="stat"><span>LARGEST</span><b id="anLargest">—</b></div>
+  <div class="screenhead"><h2>Analysis</h2><button class="chip" onclick="openSheet('analysisSheet')">Custom report</button></div>
+  <div class="chips" id="anChips">
+   <button data-k="this" onclick="setAnPeriod('this')">This month</button>
+   <button data-k="last" onclick="setAnPeriod('last')">Last month</button>
+   <button data-k="90" onclick="setAnPeriod('90')">3 months</button>
+   <button data-k="year" onclick="setAnPeriod('year')">This year</button>
+   <button data-k="all" onclick="setAnPeriod('all')">All time</button>
+   <button data-k="custom" onclick="openAnCustom()">Custom…</button>
   </div>
-  <div class="card"><div class="cardhead"><h3 id="groupTitle">By category</h3></div><div class="chart tall"><canvas id="analysisChart"></canvas></div></div>
-  <div class="card"><div class="cardhead"><h3>Monthly trend</h3></div><div class="chart"><canvas id="trendChart"></canvas></div></div>
+  <div class="hint" id="anRange" style="margin:0 3px 12px">&nbsp;</div>
+
+  <div class="card" id="anCustomCard" style="display:none">
+   <div class="cardhead"><div><span class="eyebrow">Custom report</span><h3 id="cuTitle">By category</h3></div><button class="link" onclick="$('anCustomCard').style.display='none'">Close</button></div>
+   <div class="hint" id="cuScope" style="margin-bottom:8px"></div>
+   <div class="stats" style="margin-bottom:6px">
+    <div class="stat" style="box-shadow:none;background:#f7f9fd"><span>TOTAL</span><b id="cuTotal">—</b></div>
+    <div class="stat" style="box-shadow:none;background:#f7f9fd"><span>TRANSACTIONS</span><b id="cuCount">—</b><small id="cuAvg"></small></div>
+   </div>
+   <div id="cuList"></div>
+  </div>
+
+  <div class="stats">
+   <div class="stat"><span>TOTAL SPENT</span><b id="ovTotal">—</b><small id="ovTotalSub">&nbsp;</small></div>
+   <div class="stat"><span>VS PREVIOUS PERIOD</span><b id="ovDelta">—</b><small id="ovDeltaSub">&nbsp;</small></div>
+   <div class="stat"><span>DAILY AVERAGE</span><b id="ovDaily">—</b><small id="ovDailySub">&nbsp;</small></div>
+   <div class="stat"><span>TRANSACTIONS</span><b id="ovCount">—</b><small id="ovCountSub">&nbsp;</small></div>
+  </div>
+
+  <div class="card">
+   <div class="cardhead"><div><span class="eyebrow">Breakdown</span><h3>By category</h3></div></div>
+   <div class="chart" id="ovCatChartWrap" style="height:190px;margin-bottom:6px"><canvas id="ovCatChart"></canvas></div>
+   <div id="ovCats"></div>
+  </div>
+  <div class="card">
+   <div class="cardhead"><div><span class="eyebrow">Trend</span><h3>Last 12 months</h3></div></div>
+   <div class="cols" id="ovMonthly"></div>
+   <div class="legend"><span><i style="background:var(--blue)"></i>Transactions</span><span><i style="background:#9bb9fb"></i>Recurring</span></div>
+  </div>
+  <div class="card">
+   <div class="cardhead"><div><span class="eyebrow">What you buy</span><h3>Top items</h3></div></div>
+   <div id="ovItems"></div>
+  </div>
+  <div class="card">
+   <div class="cardhead"><div><span class="eyebrow">People</span><h3>Who paid</h3></div></div>
+   <div id="ovPaid"></div>
+  </div>
+  <div class="card">
+   <div class="cardhead"><div><span class="eyebrow">Payment</span><h3>Payment methods</h3></div></div>
+   <div id="ovMethod"></div>
+  </div>
+  <div class="card">
+   <div class="cardhead"><div><span class="eyebrow">Habits</span><h3>Spending by weekday</h3></div></div>
+   <div class="cols" id="ovWeek" style="height:130px"></div>
+  </div>
+  <div class="card flat">
+   <div class="cardhead"><div><span class="eyebrow">Big spends</span><h3>Largest expenses</h3></div></div>
+   <div id="ovLargest"></div>
+  </div>
  </section>
 
  <!-- RECURRING LIST -->
@@ -315,7 +412,7 @@ code{background:#f2f4f7;padding:1px 5px;border-radius:5px;font-size:13px}
     <div class="field"><label>START DATE</label><input type="date" id="rfStart"></div>
     <div class="field"><label>END DATE</label><input type="date" id="rfEnd"></div>
    </div>
-   <div class="field"><label>CATEGORY</label><select id="rfCat"></select></div>
+   <div class="field"><label>CATEGORY</label><select id="rfCat" class="catsel" onchange="catPicked(this)"></select></div>
    <details class="more"><summary>More options</summary>
     <div class="field"><label>PAID BY</label><input id="rfPaid" list="paidList" placeholder="Optional"></div>
     <div class="field"><label>PAYMENT METHOD</label><input id="rfMethod" list="methodList" placeholder="Optional"></div>
@@ -333,7 +430,7 @@ code{background:#f2f4f7;padding:1px 5px;border-radius:5px;font-size:13px}
    <button class="menuitem" onclick="goRecurring()"><span>🔁 Recurring expenses</span><span class="chev">›</span></button>
    <button class="menuitem" onclick="openComparisons()"><span>⇄ Month comparisons</span><span class="chev">›</span></button>
    <button class="menuitem" onclick="openReports()"><span>📄 Saved reports</span><span class="chev">›</span></button>
-   <button class="menuitem" onclick="openCategorySheet()"><span>🏷 Add category</span><span class="chev">›</span></button>
+   <button class="menuitem" onclick="openCategorySheet()"><span>🏷 New category</span><span class="chev">›</span></button>
    <button class="menuitem" onclick="openImport()"><span>⬆ Import CSV</span><span class="chev">›</span></button>
   </div>
   <div class="menu">
@@ -378,7 +475,12 @@ code{background:#f2f4f7;padding:1px 5px;border-radius:5px;font-size:13px}
  <div class="field"><label>DESCRIPTION / KEYWORD</label><input id="aSearch" type="search"></div>
  <div class="twocol"><div class="field"><label>MIN AMOUNT</label><input type="number" inputmode="decimal" id="aMin"></div><div class="field"><label>MAX AMOUNT</label><input type="number" inputmode="decimal" id="aMax"></div></div>
  <div class="field"><label>GROUP BY</label><select id="aGroup"><option value="Category">Category</option><option value="Description">Description</option><option value="Month">Month</option><option value="PaidBy">Paid by</option><option value="PaymentMethod">Payment method</option></select></div>
- <button class="primary full" onclick="closeSheet('analysisSheet');runAnalysis()">Analyze</button>
+ <button class="primary full" onclick="closeSheet('analysisSheet');runCustom()">Run report</button>
+</div></div>
+
+<div class="sheetback" id="anPeriodSheet" onclick="backdrop(event,this)"><div class="sheet"><div class="handle"></div><h3>Custom period</h3>
+ <div class="twocol"><div class="field"><label>FROM</label><input type="date" id="anFrom"></div><div class="field"><label>TO</label><input type="date" id="anTo"></div></div>
+ <button class="primary full" onclick="applyAnCustom()">Show analysis</button>
 </div></div>
 
 <div class="sheetback" id="genericSheet" onclick="backdrop(event,this)"><div class="sheet" id="genericContent"></div></div>
@@ -387,7 +489,7 @@ code{background:#f2f4f7;padding:1px 5px;border-radius:5px;font-size:13px}
 
 <script>
 'use strict';
-const APP_VERSION='5.0.0';
+const APP_VERSION='5.1.0';
 const $=id=>document.getElementById(id);
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const sar=n=>'SAR '+Number(n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -398,7 +500,7 @@ const store={
 };
 let cfg=store.get('fe.cfg',{url:'',key:''});
 let meta=store.get('fe.c.meta',{categories:[],descriptions:[],paidBy:[],methods:[]});
-let charts={},period={start:'',end:'',title:'This month'},recurringCache=[],txCache=[],homeRecentCache=[],current='home',lastLoad=0,pending=0;
+let charts={},period={start:'',end:'',title:'This month'},recurringCache=[],txCache=[],homeRecentCache=[],largestCache=[],editingTx=null,anKey=store.get('fe.anPeriod',{k:'this'}),current='home',lastLoad=0,pending=0;
 
 /* ---------- API ---------- */
 async function api(fn,...args){
@@ -445,6 +547,7 @@ function skeleton(n){return Array.from({length:n||3},()=>'<div class="skeleton">
 /* ---------- Navigation ---------- */
 const NAV_OF={recurring:'more',recurringAdd:'more',connect:''};
 function show(id){
+ if(id!=='add'&&editingTx)resetAddForm();
  document.querySelectorAll('.screen').forEach(x=>x.classList.toggle('active',x.id===id));
  const navId=NAV_OF[id]!=null?NAV_OF[id]:id;
  document.querySelectorAll('.nav').forEach(x=>x.classList.toggle('on',x.dataset.id===navId));
@@ -455,13 +558,13 @@ function go(id){
  show(id);
  if(id==='home')loadHome();
  if(id==='transactions')loadTx();
- if(id==='analysis')runAnalysis();
- if(id==='add'&&!$('eamt').value)setTimeout(()=>$('eamt').focus(),250);
+ if(id==='analysis')loadOverview();
+ if(id==='add'&&addMode==='single'&&!$('eamt').value)setTimeout(()=>$('eamt').focus(),250);
 }
 function refreshCurrent(){
  if(current==='home'){loadMeta();loadHome()}
  else if(current==='transactions')loadTx();
- else if(current==='analysis')runAnalysis();
+ else if(current==='analysis')loadOverview();
  else if(current==='recurring')loadRecurringList();
  else loadMeta();
 }
@@ -493,24 +596,34 @@ function fillSelect(id,items,allLabel,keep){const s=$(id),v=keep?s.value:'';s.in
 function fillList(id,items){$(id).innerHTML=(items||[]).slice(0,300).map(x=>`<option value="${esc(x)}">`).join('')}
 
 /* ---------- Meta ---------- */
+function catOptions(){return (meta.categories&&meta.categories.length?meta.categories:['Other'])}
+function fillCatSelect(sel,val){
+ const cats=catOptions(),v=val!=null?val:sel.value;
+ sel.innerHTML=cats.map(c=>`<option>${esc(c)}</option>`).join('')+'<option value="__new__">＋ New category…</option>';
+ if(v&&cats.includes(v))sel.value=v;
+ sel.dataset.prev=sel.value;
+}
 function applyMeta(m){
  meta=m||meta;
- const cats=meta.categories&&meta.categories.length?meta.categories:['Other'];
- fillSelect('ecat',cats,'',true);fillSelect('txCat',cats,'All categories',true);fillSelect('aCat',cats,'All categories',true);
+ const cats=catOptions();
+ document.querySelectorAll('select.catsel').forEach(sel=>fillCatSelect(sel));
+ fillSelect('txCat',cats,'All categories',true);fillSelect('aCat',cats,'All categories',true);
  fillList('descList',meta.descriptions);fillList('paidList',meta.paidBy);fillList('methodList',meta.methods);
 }
 function loadMeta(){return cached('meta','getMeta',[],d=>applyMeta(d),()=>{})}
 
 /* ---------- Home ---------- */
-function setPeriod(k){
+function rangeFor(k){
  const n=new Date();let a=new Date(n),b=new Date(n),title='This month';
  if(k==='this')a=new Date(n.getFullYear(),n.getMonth(),1);
  if(k==='last'){a=new Date(n.getFullYear(),n.getMonth()-1,1);b=new Date(n.getFullYear(),n.getMonth(),0);title='Last month'}
  if(k==='30'){a.setDate(a.getDate()-29);title='Last 30 days'}
  if(k==='90'){a.setDate(a.getDate()-89);title='Last 3 months'}
  if(k==='year'){a=new Date(n.getFullYear(),0,1);title='This year'}
- setPeriodRange(ymd(a),ymd(b),title,k);
+ if(k==='all')return{start:'',end:'',title:'All time'};
+ return{start:ymd(a),end:ymd(b),title};
 }
+function setPeriod(k){const r=rangeFor(k);setPeriodRange(r.start,r.end,r.title,k)}
 function applyCustomPeriod(){
  const a=$('pfrom').value,b=$('pto').value;
  if(!a||!b)return toast('Select both From and To dates.');
@@ -578,56 +691,213 @@ function loadTx(){
  },e=>{$('txList').innerHTML=errorBox('Transactions could not load.',e,'loadTx()')});
 }
 function openTx(src,i){
- const x=(src==='home'?homeRecentCache:txCache)[i];if(!x)return;
+ const x=(src==='home'?homeRecentCache:src==='big'?largestCache:txCache)[i];if(!x)return;
+ window._openTx=x;
  const row=(k,v)=>v?`<div class="detail-row"><span>${k}</span><b>${esc(v)}</b></div>`:'';
  generic(x.description||x.category||'Expense',
   `<div class="detail-amt">${sar(x.amount)}</div>`+
   row('Date',niceDate(x.date)+' ('+x.date+')')+row('Category',x.category)+row('Paid by',x.paidBy)+row('Payment method',x.method)+
   row('Spread over',x.spread>1?x.spread+' months':'')+row('Notes',x.notes)+
-  `<button class="secondary full" style="margin-top:16px" onclick="closeSheet('genericSheet')">Close</button>`);
+  `<div class="btnrow"><button class="secondary" onclick="closeSheet('genericSheet');openEdit(window._openTx)">✎ Edit</button><button class="danger-btn" onclick="deleteTx(window._openTx)">Delete</button></div>
+   <button class="link full" style="margin-top:10px;padding:10px" onclick="closeSheet('genericSheet')">Close</button>`);
+}
+async function deleteTx(x,after){
+ if(!x||!x.id)return;
+ if(!confirm(`Delete "${x.description||x.category}" (${sar(x.amount)}) on ${x.date}?\n\nThis cannot be undone.`))return;
+ try{await api('deleteExpense',x.id);store.clearCache();closeSheet('genericSheet');toast('Expense deleted');if(after)after();else refreshCurrent()}
+ catch(e){toast(e.message)}
 }
 
 /* ---------- Add expense ---------- */
+let addMode='single',rowSeq=0;
+function setAddMode(m){
+ addMode=m;
+ document.querySelectorAll('#addMode button').forEach(b=>b.classList.toggle('on',b.dataset.m===m));
+ $('singleForm').style.display=m==='single'?'':'none';$('multiForm').style.display=m==='multi'?'':'none';
+ if(m==='multi'){
+  if(!$('mdate').value)$('mdate').value=$('edate').value||ymd(new Date());
+  if(!$('mpaid').value)$('mpaid').value=$('epaid').value;
+  if(!$('mmethod').value)$('mmethod').value=$('emethod').value;
+  if(!document.querySelector('#multiRows .mrow')){addMultiRow();addMultiRow()}
+ }
+ store.set('fe.addMode',m);
+}
+function addMultiRow(focus){
+ const id='mr'+(++rowSeq),d=document.createElement('div');
+ d.className='card mrow';d.id=id;
+ d.innerHTML=`<div class="mrow-head"><b></b><button class="rm" onclick="removeMultiRow('${id}')">Remove</button></div>
+  <div class="twocol"><div class="field"><label>AMOUNT</label><input type="number" step="0.01" min="0" inputmode="decimal" class="m-amt" placeholder="0.00" oninput="updMulti()"></div>
+  <div class="field"><label>CATEGORY</label><select class="m-cat catsel" onchange="catPicked(this)"></select></div></div>
+  <div class="field" style="margin-bottom:0"><label>ITEM / DESCRIPTION</label><input class="m-desc" list="descList" autocomplete="off" placeholder="What was it?" onchange="descPicked(this,this.closest('.mrow').querySelector('.m-cat'))"></div>`;
+ $('multiRows').appendChild(d);
+ fillCatSelect(d.querySelector('.m-cat'),store.get('fe.lastCat',''));
+ updMulti();
+ if(focus)setTimeout(()=>{d.scrollIntoView({behavior:'smooth',block:'center'});d.querySelector('.m-amt').focus()},50);
+}
+function removeMultiRow(id){
+ const rows=document.querySelectorAll('#multiRows .mrow');
+ if(rows.length<=1){const r=$(id);r.querySelector('.m-amt').value='';r.querySelector('.m-desc').value='';updMulti();return}
+ $(id).remove();updMulti();
+}
+function updMulti(){
+ let t=0,n=0;
+ document.querySelectorAll('#multiRows .mrow').forEach((r,i)=>{r.querySelector('.mrow-head b').textContent='Item '+(i+1);const a=Number(r.querySelector('.m-amt').value);if(a>0){t+=a;n++}});
+ $('multiTotal').textContent=sar(t);$('multiCount').textContent=n+' item'+(n===1?'':'s')+' to save';
+}
+async function saveMulti(){
+ const msg=$('multiMsg');msg.className='msg err';msg.textContent='';
+ const items=[];let bad=0;
+ document.querySelectorAll('#multiRows .mrow').forEach((r,i)=>{
+  const a=r.querySelector('.m-amt').value,d=r.querySelector('.m-desc').value.trim(),c=r.querySelector('.m-cat').value;
+  if(!a&&!d)return;
+  if(!(Number(a)>0)){bad=bad||i+1;return}
+  items.push({amount:a,description:d,category:c});
+ });
+ if(bad)return msg.textContent='Item '+bad+' needs an amount greater than zero.';
+ if(!items.length)return msg.textContent='Enter at least one amount.';
+ const common={date:$('mdate').value,paidBy:$('mpaid').value.trim(),paymentMethod:$('mmethod').value.trim()};
+ if(!common.date)return msg.textContent='Choose a date.';
+ const b=$('multiBtn');b.disabled=true;b.textContent='Saving…';
+ try{
+  const r=await api('addExpenses',items,common);
+  store.set('fe.lastPaid',common.paidBy);store.set('fe.lastMethod',common.paymentMethod);
+  store.clearCache();
+  $('multiRows').innerHTML='';addMultiRow();addMultiRow();
+  toast(`Saved ${r.count} expenses · ${sar(r.total)}`);
+  loadMeta();go('home');
+ }catch(e){msg.textContent=e.message}
+ finally{b.disabled=false;b.textContent='Save all'}
+}
+function descPicked(inp,sel){
+ const c=meta.descCats&&meta.descCats[inp.value.trim()];
+ if(c&&sel&&catOptions().includes(c)){sel.value=c;sel.dataset.prev=c}
+}
+function catPicked(sel){
+ if(sel.value!=='__new__'){sel.dataset.prev=sel.value;return}
+ sel.value=sel.dataset.prev||catOptions()[0];
+ openCategorySheet(sel);
+}
 async function saveExpense(){
  const o={date:$('edate').value,description:$('edesc').value.trim(),category:$('ecat').value,amount:$('eamt').value,paidBy:$('epaid').value.trim(),paymentMethod:$('emethod').value.trim(),spreadMonths:$('espread').value||1,notes:$('enotes').value.trim()};
  const msg=$('saveMsg');msg.className='msg';
  if(!(Number(o.amount)>0)){msg.className='msg err';msg.textContent='Enter an amount greater than zero.';return $('eamt').focus()}
  if(!o.date){msg.className='msg err';msg.textContent='Choose a date.';return}
- const btn=$('saveBtn');btn.disabled=true;btn.textContent='Saving…';msg.textContent='';
+ const btn=$('saveBtn'),wasEdit=!!editingTx,label=btn.textContent;btn.disabled=true;btn.textContent='Saving…';msg.textContent='';
  try{
-  await api('addExpense',o);
+  if(wasEdit){o.id=editingTx.id;await api('updateExpense',o)}
+  else await api('addExpense',o);
   store.set('fe.lastPaid',o.paidBy);store.set('fe.lastMethod',o.paymentMethod);store.set('fe.lastCat',o.category);
   store.clearCache();
-  ['eamt','edesc','enotes'].forEach(id=>$(id).value='');$('espread').value=1;
-  toast('Expense saved · '+sar(o.amount));
-  loadMeta();go('home');
- }catch(e){msg.className='msg err';msg.textContent=e.message}
- finally{btn.disabled=false;btn.textContent='Save expense'}
+  const back=wasEdit?(editingTx._from||'transactions'):'home';
+  resetAddForm();
+  toast((wasEdit?'Changes saved · ':'Expense saved · ')+sar(o.amount));
+  loadMeta();go(back);
+ }catch(e){msg.className='msg err';msg.textContent=e.message;btn.textContent=label}
+ finally{btn.disabled=false}
 }
-function openCategorySheet(){
- generic('Add category','<div class="field"><label>CATEGORY NAME</label><input id="newCat" placeholder="e.g. Gifts"></div><button class="primary full" id="newCatBtn" onclick="saveCategory()">Add category</button><div class="msg" id="newCatMsg"></div>');
+function openEdit(x){
+ if(!x)return;
+ editingTx=Object.assign({_from:current==='add'?'transactions':current},x);
+ show('add');editingTx._from=editingTx._from;setAddMode('single');
+ $('add').classList.add('editing');
+ $('addTitle').textContent='Edit expense';$('addCancel').style.display='';
+ $('saveBtn').textContent='Save changes';$('delBtn').style.display='';
+ $('eamt').value=x.amount;$('edesc').value=x.description||'';
+ if(x.category&&!catOptions().includes(x.category)){meta.categories=catOptions().concat(x.category).sort();applyMeta(meta)}
+ fillCatSelect($('ecat'),x.category||'Other');
+ $('edate').value=x.date;$('epaid').value=x.paidBy||'';$('emethod').value=x.method||'';
+ $('espread').value=x.spread||1;$('enotes').value=x.notes||'';
+ $('emore').open=!!(x.method||x.notes||x.spread>1);
+ $('saveMsg').textContent='';
+}
+function resetAddForm(){
+ editingTx=null;$('add').classList.remove('editing');
+ $('addTitle').textContent='Add expense';$('addCancel').style.display='none';
+ $('saveBtn').textContent='Save expense';$('delBtn').style.display='none';
+ ['eamt','edesc','enotes'].forEach(id=>$(id).value='');$('espread').value=1;$('edate').value=ymd(new Date());
+ $('epaid').value=store.get('fe.lastPaid','');$('emethod').value=store.get('fe.lastMethod','');
+ fillCatSelect($('ecat'),store.get('fe.lastCat',''));$('saveMsg').textContent='';$('emore').open=false;
+}
+function cancelEdit(){const back=editingTx&&editingTx._from||'transactions';resetAddForm();go(back)}
+function deleteEditing(){const x=editingTx,back=x&&x._from||'transactions';deleteTx(x,()=>{resetAddForm();go(back)})}
+
+let catTarget=null;
+function openCategorySheet(target){
+ catTarget=target||null;
+ generic('New category','<div class="field"><label>CATEGORY NAME</label><input id="newCat" placeholder="e.g. Gifts" onkeydown="if(event.key===\'Enter\')saveCategory()"></div><button class="primary full" id="newCatBtn" onclick="saveCategory()">Add category</button><div class="msg" id="newCatMsg"></div>');
  setTimeout(()=>$('newCat').focus(),250);
 }
 async function saveCategory(){
  const n=$('newCat').value.trim();if(!n)return;
  $('newCatBtn').disabled=true;
- try{const r=await api('addCategory',n);meta.categories=r.categories;store.set('fe.c.meta',meta);applyMeta(meta);closeSheet('genericSheet');toast(r.exists?'Category already exists':'Category added')}
- catch(e){$('newCatMsg').className='msg err';$('newCatMsg').textContent=e.message;$('newCatBtn').disabled=false}
+ try{
+  const r=await api('addCategory',n);meta.categories=r.categories;store.set('fe.c.meta',meta);applyMeta(meta);
+  const real=r.categories.find(c=>c.toLowerCase()===n.toLowerCase())||n;
+  if(catTarget){fillCatSelect(catTarget,real)}
+  closeSheet('genericSheet');toast(r.exists?'Category already exists — selected':'Category added');
+ }catch(e){$('newCatMsg').className='msg err';$('newCatMsg').textContent=e.message;$('newCatBtn').disabled=false}
 }
 
 /* ---------- Analysis ---------- */
-function runAnalysis(){
- document.querySelectorAll('#analysis .card').forEach(c=>c.style.display=window.Chart?'':'none');
+function barList(list,opts){
+ opts=opts||{};
+ if(!list||!list.length)return'<div class="empty">Nothing in this period.</div>';
+ const total=list.reduce((a,x)=>a+Number(x.value||0),0)||1,max=Math.max(...list.map(x=>Number(x.value||0)))||1;
+ return list.slice(0,opts.limit||8).map(x=>`<div class="catrow"><span class="catname">${esc(x.name)}${opts.count&&x.count?` <em class="cnt">×${x.count}</em>`:''}</span><span class="pct">${(x.value/total*100).toFixed(1)}%</span><span class="money">${sar(x.value)}</span><div class="barbg"><div class="bar" style="width:${Math.max(1.5,x.value/max*100)}%"></div></div></div>`).join('');
+}
+function cols(list,curIdx){
+ const max=Math.max(...list.map(x=>x.a+(x.b||0)),0)||1;
+ return list.map((x,i)=>`<button class="col${i===curIdx?' cur':''}" onclick="toast('${esc(x.full||x.label)}: ${sar(x.a+(x.b||0))}${x.b?' (incl. '+sar(x.b)+' recurring)':''}')"><div class="stk" style="height:${Math.max(1.5,(x.a+(x.b||0))/max*100)}%"><div class="s1" style="flex:${x.a}"></div>${x.b?`<div class="s2" style="flex:${x.b}"></div>`:''}</div><small>${esc(x.label)}</small></button>`).join('');
+}
+const MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+function setAnPeriod(k){anKey={k};store.set('fe.anPeriod',anKey);loadOverview()}
+function openAnCustom(){if(anKey.k==='custom'){$('anFrom').value=anKey.a;$('anTo').value=anKey.b}openSheet('anPeriodSheet')}
+function applyAnCustom(){
+ const a=$('anFrom').value,b=$('anTo').value;
+ if(!a||!b)return toast('Select both dates.');if(a>b)return toast('From date cannot be after To date.');
+ anKey={k:'custom',a,b};store.set('fe.anPeriod',anKey);closeSheet('anPeriodSheet');loadOverview();
+}
+function loadOverview(){
+ const r=anKey.k==='custom'?{start:anKey.a,end:anKey.b,title:niceDate(anKey.a)+' – '+niceDate(anKey.b)}:rangeFor(anKey.k||'this');
+ document.querySelectorAll('#anChips button').forEach(b=>b.classList.toggle('on',b.dataset.k===(anKey.k||'this')));
+ const key='ov_'+r.start+'_'+r.end;
+ if(!store.get('fe.c.'+key))['ovCats','ovItems','ovPaid','ovMethod','ovLargest'].forEach(id=>$(id).innerHTML=skeleton(3));
+ cached(key,'analyticsOverview',[{start:r.start,end:r.end}],d=>renderOverview(d,r),e=>{$('ovCats').innerHTML=errorBox('Analysis could not load.',e,'loadOverview()')});
+}
+function renderOverview(d,r){
+ $('anRange').textContent=`${r.title} · ${niceDate(d.range.start)} – ${niceDate(d.range.end)} · ${d.days} day${d.days===1?'':'s'}`;
+ $('ovTotal').textContent=sar(d.total);
+ $('ovTotalSub').textContent=d.recTotal?`${sar(d.txTotal)} spent + ${sar(d.recTotal)} recurring`:'No recurring charges';
+ if(d.prev&&d.prev.total){
+  const p=(d.total-d.prev.total)/d.prev.total*100,up=p>0;
+  $('ovDelta').innerHTML=`<span class="${up?'delta-up':'delta-down'}">${up?'▲':'▼'} ${Math.abs(p).toFixed(1)}%</span>`;
+  $('ovDeltaSub').textContent=`${up?'More':'Less'} than ${sar(d.prev.total)}`;
+ }else{$('ovDelta').textContent='—';$('ovDeltaSub').textContent=d.prev?'No spending in previous period':'Not available for all time'}
+ $('ovDaily').textContent=sar(d.dailyAvg);$('ovDailySub').textContent=`Over ${d.days} day${d.days===1?'':'s'}`;
+ $('ovCount').textContent=d.count;$('ovCountSub').textContent=d.count?'Average '+sar(d.avgTx):'No transactions';
+ $('ovCats').innerHTML=barList(d.category,{count:true,limit:12});
+ $('ovCatChartWrap').style.display=d.category.length&&window.Chart?'':'none';
+ if(d.category.length)draw('ovCatChart','doughnut',d.category.slice(0,8).map(c=>c.name),d.category.slice(0,8).map(c=>c.value));
+ $('ovMonthly').innerHTML=cols(d.monthly.map(m=>({label:MON[+m.month.slice(5)-1],full:MON[+m.month.slice(5)-1]+' '+m.month.slice(0,4),a:m.tx,b:m.rec})),11);
+ $('ovItems').innerHTML=barList(d.items,{count:true,limit:10});
+ $('ovPaid').innerHTML=barList(d.paidBy,{count:true});
+ $('ovMethod').innerHTML=barList(d.method,{count:true});
+ const order=[1,2,3,4,5,6,0];
+ $('ovWeek').innerHTML=cols(order.map(i=>({label:d.weekday[i].label,a:d.weekday[i].value})));
+ largestCache=d.largest||[];
+ $('ovLargest').innerHTML=largestCache.map((x,i)=>homeTxHtml(x,i,'big')).join('')||'<div class="empty">No transactions in this period.</div>';
+}
+const GROUP_NAMES={Category:'category',Description:'item',Month:'month',PaidBy:'who paid',PaymentMethod:'payment method'};
+function runCustom(){
  const f={start:$('aFrom').value,end:$('aTo').value,category:$('aCat').value,search:$('aSearch').value,minAmount:$('aMin').value,maxAmount:$('aMax').value,groupBy:$('aGroup').value};
- const scope=[(f.start||f.end)?((f.start?niceDate(f.start):'Start')+' – '+(f.end?niceDate(f.end):'Today')):'All time',f.category||'all categories',f.search?'“'+f.search+'”':''].filter(Boolean).join(' · ');
- $('anScope').textContent=scope;
- $('groupTitle').textContent='By '+$('aGroup').selectedOptions[0].text.toLowerCase();
- cached('an_'+JSON.stringify(f),'analyze',[f],d=>{
-  $('anTotal').textContent=sar(d.total);$('anCount').textContent=d.count;$('anAvg').textContent=sar(d.average);
-  $('anLargest').textContent=d.largest?sar(d.largest.amount):'—';
-  draw('analysisChart','bar',d.groups.slice(0,12).map(x=>x.name.length>14?x.name.slice(0,13)+'…':x.name),d.groups.slice(0,12).map(x=>x.total));
-  draw('trendChart','line',d.monthly.map(x=>x.month),d.monthly.map(x=>x.total));
- },e=>{toast(e.message);['anTotal','anCount','anAvg','anLargest'].forEach(id=>$(id).textContent='—')});
+ $('cuScope').textContent=[(f.start||f.end)?((f.start?niceDate(f.start):'Start')+' – '+(f.end?niceDate(f.end):'Today')):'All time',f.category||'all categories',f.search?'“'+f.search+'”':'',(f.minAmount||f.maxAmount)?`amount ${f.minAmount||0}–${f.maxAmount||'∞'}`:''].filter(Boolean).join(' · ')+' · transactions only';
+ $('cuTitle').textContent='By '+GROUP_NAMES[f.groupBy];
+ $('anCustomCard').style.display='';$('cuList').innerHTML=skeleton(3);
+ window.scrollTo({top:0,behavior:'smooth'});
+ api('analyze',f).then(d=>{
+  $('cuTotal').textContent=sar(d.total);$('cuCount').textContent=d.count;$('cuAvg').textContent=d.count?'Average '+sar(d.average):'';
+  $('cuList').innerHTML=barList(d.groups.map(g=>({name:g.name,value:g.total,count:g.count})),{count:true,limit:25});
+ }).catch(e=>{$('cuList').innerHTML=errorBox('Report could not run.',e,'runCustom()')});
 }
 
 /* ---------- Recurring ---------- */
@@ -650,11 +920,11 @@ function loadRecurringList(){
 function showRecurringForm(i){
  const x=i==null?null:recurringCache[i];
  show('recurringAdd');
- const cats=meta.categories&&meta.categories.length?meta.categories:['Other'];fillSelect('rfCat',cats);
+ const cats=catOptions();fillCatSelect($('rfCat'),x&&x.category||cats[0]);
  $('rfTitle').textContent=x?'Edit recurring expense':'New recurring expense';
  $('rfId').value=x?x.id:'';$('rfName').value=x?x.name:'';$('rfAmt').value=x?x.amount:'';
  $('rfFreq').value=x?x.frequency:'Monthly';$('rfStart').value=x&&x.startDate||ymd(new Date());
- $('rfEnd').value=x&&x.endDate||'';$('rfDay').value=x&&x.dueDay||1;$('rfCat').value=x&&x.category||cats[0];
+ $('rfEnd').value=x&&x.endDate||'';$('rfDay').value=x&&x.dueDay||1;
  $('rfPaid').value=x&&x.paidBy||'';$('rfMethod').value=x&&x.paymentMethod||'';$('rfNotes').value=x&&x.notes||'';
  $('rfMsg').textContent='';$('rfMsg').className='msg';
 }
@@ -701,7 +971,7 @@ async function openReports(){
 }
 function runReport(x){
  $('aFrom').value=x.start||'';$('aTo').value=x.end||'';$('aCat').value=x.category||'';$('aGroup').value=x.groupBy||'Category';
- $('aSearch').value='';$('aMin').value='';$('aMax').value='';closeSheet('genericSheet');go('analysis');
+ $('aSearch').value='';$('aMin').value='';$('aMax').value='';closeSheet('genericSheet');go('analysis');runCustom();
 }
 async function saveCurrentReport(){
  const name=prompt('Name this report');if(!name)return;
@@ -787,7 +1057,8 @@ async function installApp(){
 /* ---------- Start ---------- */
 function startApp(){
  const saved=store.get('fe.period',{k:'this'});
- const lc=store.get('fe.lastCat','');applyMeta(meta);if(lc)$('ecat').value=lc;
+ applyMeta(meta);fillCatSelect($('ecat'),store.get('fe.lastCat',''));
+ $('mdate').value=ymd(new Date());if(store.get('fe.addMode')==='multi')setAddMode('multi');
  $('epaid').value=store.get('fe.lastPaid','');$('emethod').value=store.get('fe.lastMethod','');
  show('home');loadMeta();
  if(saved.k==='custom')setPeriodRange(saved.a,saved.b,saved.title,'custom');else setPeriod(saved.k||'this');
