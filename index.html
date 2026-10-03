@@ -183,6 +183,28 @@ details.more[open] summary:before{content:"－ "}
 .connect-sub{text-align:center;color:var(--muted);font-size:14px;margin:6px 10px 18px;line-height:1.5}
 code{background:#f2f4f7;padding:1px 5px;border-radius:5px;font-size:13px}
 
+/* v5.2 picker + split */
+input.picker{cursor:pointer;caret-color:transparent;background-image:linear-gradient(45deg,transparent 50%,#98a2b3 50%),linear-gradient(135deg,#98a2b3 50%,transparent 50%);background-position:calc(100% - 18px) 22px,calc(100% - 13px) 22px;background-size:5px 5px;background-repeat:no-repeat;padding-right:32px;text-overflow:ellipsis}
+.pick-sheet{height:86vh;display:flex;flex-direction:column;overflow:hidden!important}
+.pick-sheet h3{margin-bottom:10px}
+.pick-list{flex:1;overflow-y:auto;margin:10px -18px 0;padding:0 18px calc(10px + var(--sb));-webkit-overflow-scrolling:touch}
+.pick-row{width:100%;display:flex;align-items:center;justify-content:space-between;gap:10px;border:0;border-bottom:1px solid #f1f3f7;background:#fff;padding:14px 4px;text-align:left;font-size:16px;font-weight:650}
+.pick-row small{color:var(--faint);font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:45%}
+.pick-row.sel{color:var(--blue)}
+.pick-row.sel:after{content:"✓";font-weight:900}
+.pick-row:active{background:#f8faff}
+.pick-add{background:var(--soft);color:var(--blue);border-radius:13px;border:0;margin-bottom:6px;padding:14px 12px;font-weight:800}
+.pick-row mark{background:#fff3c4;color:inherit;border-radius:3px;padding:0 1px}
+.pick-sec{font-size:11px;font-weight:850;color:var(--faint);letter-spacing:.6px;margin:12px 4px 2px}
+.stepper{display:grid;grid-template-columns:50px 1fr 50px;gap:8px;align-items:center}
+.stepper button{height:50px;border:0;border-radius:13px;background:#edf2ff;color:var(--blue);font-size:24px;font-weight:800}
+.stepper input{text-align:center;font-weight:800;font-size:18px}
+.split-chips{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+.split-chips button{border:1px solid #e3e8f0;background:#fff;border-radius:16px;padding:6px 11px;font-size:12px;font-weight:750;color:var(--muted)}
+.split-chips button.on{background:var(--blue);border-color:var(--blue);color:#fff}
+.split-hint{margin-top:8px;font-size:13px;color:var(--muted);line-height:1.45}
+.split-hint b{color:var(--ink)}
+.mgrid{display:grid;grid-template-columns:1fr 92px;gap:10px}
 /* v5.1 */
 .seg{display:flex;background:#e9edf5;border-radius:13px;padding:4px;margin:0 0 10px}
 .seg button{flex:1;border:0;background:transparent;padding:10px 6px;border-radius:10px;font-weight:800;font-size:14px;color:var(--muted)}
@@ -293,19 +315,22 @@ code{background:#f2f4f7;padding:1px 5px;border-radius:5px;font-size:13px}
   <div class="editing-banner">Editing a saved expense</div>
   <div class="seg" id="addMode"><button class="on" data-m="single" onclick="setAddMode('single')">One expense</button><button data-m="multi" onclick="setAddMode('multi')">Several at once</button></div>
 
-  <div id="singleForm" class="card">
-   <div class="field"><label>AMOUNT (SAR)</label><input class="amount-input" type="number" step="0.01" min="0" id="eamt" inputmode="decimal" placeholder="0.00"></div>
-   <div class="field"><label>ITEM / DESCRIPTION</label><input id="edesc" list="descList" placeholder="Type a new item or pick a previous one" autocomplete="off" onchange="descPicked(this,$('ecat'))"></div>
-   <div class="field"><label>CATEGORY</label><select id="ecat" class="catsel" onchange="catPicked(this)"></select></div>
+  <div id="singleForm" class="card" data-pickscope>
+   <div class="field"><label>AMOUNT (SAR)</label><input class="amount-input" type="number" step="0.01" min="0" id="eamt" inputmode="decimal" placeholder="0.00" oninput="splitHint()"></div>
+   <div class="field"><label>ITEM</label><input id="edesc" class="picker" data-kind="item" readonly placeholder="Choose or add an item" onclick="openPick(this)"></div>
+   <div class="field"><label>CATEGORY</label><input id="ecat" class="picker" data-kind="cat" readonly placeholder="Choose or add a category" onclick="openPick(this)"></div>
+   <div class="field"><label>SPLIT COST OVER MONTHS</label>
+    <div class="stepper"><button type="button" onclick="stepSpread(-1)">−</button><input type="number" min="1" max="60" value="1" inputmode="numeric" id="espread" oninput="splitHint()"><button type="button" onclick="stepSpread(1)">＋</button></div>
+    <div class="split-chips" id="splitChips"><button data-n="1" onclick="setSpread(1)">No split</button><button data-n="3" onclick="setSpread(3)">3 months</button><button data-n="6" onclick="setSpread(6)">6 months</button><button data-n="12" onclick="setSpread(12)">12 months</button></div>
+    <div class="split-hint" id="splitHint"></div>
+   </div>
    <div class="twocol">
-    <div class="field"><label>DATE</label><input type="date" id="edate"></div>
+    <div class="field"><label>DATE</label><input type="date" id="edate" onchange="splitHint()"></div>
     <div class="field"><label>PAID BY</label><input id="epaid" list="paidList" placeholder="Optional" autocomplete="off"></div>
    </div>
    <details class="more" id="emore"><summary>More options</summary>
     <div class="field"><label>PAYMENT METHOD</label><input id="emethod" list="methodList" placeholder="Cash / Card / Transfer" autocomplete="off"></div>
-    <div class="field"><label>SPREAD COST OVER MONTHS</label><input type="number" min="1" value="1" inputmode="numeric" id="espread"></div>
     <div class="field"><label>NOTES</label><input id="enotes" placeholder="Optional"></div>
-    <p class="hint">A spread expense keeps the full payment on its date while its cost is allocated across the selected months.</p>
    </details>
    <button class="primary full" id="saveBtn" onclick="saveExpense()">Save expense</button>
    <button class="danger-btn full" id="delBtn" style="display:none;margin-top:9px" onclick="deleteEditing()">Delete this expense</button>
@@ -412,7 +437,7 @@ code{background:#f2f4f7;padding:1px 5px;border-radius:5px;font-size:13px}
     <div class="field"><label>START DATE</label><input type="date" id="rfStart"></div>
     <div class="field"><label>END DATE</label><input type="date" id="rfEnd"></div>
    </div>
-   <div class="field"><label>CATEGORY</label><select id="rfCat" class="catsel" onchange="catPicked(this)"></select></div>
+   <div class="field"><label>CATEGORY</label><input id="rfCat" class="picker" data-kind="cat" readonly placeholder="Choose or add a category" onclick="openPick(this)"></div>
    <details class="more"><summary>More options</summary>
     <div class="field"><label>PAID BY</label><input id="rfPaid" list="paidList" placeholder="Optional"></div>
     <div class="field"><label>PAYMENT METHOD</label><input id="rfMethod" list="methodList" placeholder="Optional"></div>
@@ -483,13 +508,18 @@ code{background:#f2f4f7;padding:1px 5px;border-radius:5px;font-size:13px}
  <button class="primary full" onclick="applyAnCustom()">Show analysis</button>
 </div></div>
 
+<div class="sheetback" id="pickSheet" onclick="backdrop(event,this)"><div class="sheet pick-sheet"><div class="handle"></div><h3 id="pickTitle">Choose</h3>
+ <input id="pickSearch" type="search" autocomplete="off" autocapitalize="words" spellcheck="false" oninput="renderPick()" onkeydown="if(event.key==='Enter'){event.preventDefault();pickEnter()}">
+ <div class="pick-list" id="pickList"></div>
+</div></div>
+
 <div class="sheetback" id="genericSheet" onclick="backdrop(event,this)"><div class="sheet" id="genericContent"></div></div>
 
 <div class="toast" id="toast"></div>
 
 <script>
 'use strict';
-const APP_VERSION='5.1.0';
+const APP_VERSION='5.2.0';
 const $=id=>document.getElementById(id);
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const sar=n=>'SAR '+Number(n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -596,19 +626,88 @@ function fillSelect(id,items,allLabel,keep){const s=$(id),v=keep?s.value:'';s.in
 function fillList(id,items){$(id).innerHTML=(items||[]).slice(0,300).map(x=>`<option value="${esc(x)}">`).join('')}
 
 /* ---------- Meta ---------- */
-function catOptions(){return (meta.categories&&meta.categories.length?meta.categories:['Other'])}
-function fillCatSelect(sel,val){
- const cats=catOptions(),v=val!=null?val:sel.value;
- sel.innerHTML=cats.map(c=>`<option>${esc(c)}</option>`).join('')+'<option value="__new__">＋ New category…</option>';
- if(v&&cats.includes(v))sel.value=v;
- sel.dataset.prev=sel.value;
+function byName(a,b){return String(a).localeCompare(String(b),undefined,{sensitivity:'base'})}
+function catOptions(){return (meta.categories&&meta.categories.length?meta.categories:['Other']).slice().sort(byName)}
+function itemOptions(){
+ let it=meta.items;
+ if(!it||!it.length)it=(meta.descriptions||[]).map(n=>({name:n,category:(meta.descCats||{})[n]||''}));
+ return it.slice().sort((a,b)=>byName(a.name,b.name));
 }
+function setPick(el,v){if(el)el.value=v||''}
 function applyMeta(m){
  meta=m||meta;
  const cats=catOptions();
- document.querySelectorAll('select.catsel').forEach(sel=>fillCatSelect(sel));
  fillSelect('txCat',cats,'All categories',true);fillSelect('aCat',cats,'All categories',true);
- fillList('descList',meta.descriptions);fillList('paidList',meta.paidBy);fillList('methodList',meta.methods);
+ fillList('paidList',meta.paidBy);fillList('methodList',meta.methods);
+}
+/* Searchable picker: alphabetical list, filters as you type, "Add new" always on top. */
+let pickEl=null,pickRows=[];
+function openPick(el){
+ pickEl=el;const cat=el.dataset.kind==='cat';
+ $('pickTitle').textContent=cat?'Category':'Item';
+ $('pickSearch').placeholder=cat?'Search or type a new category…':'Search or type a new item…';
+ $('pickSearch').value='';renderPick();openSheet('pickSheet');
+ $('pickSearch').focus();
+ const s=document.querySelector('#pickList .pick-row.sel');if(s)s.scrollIntoView({block:'center'});else $('pickList').scrollTop=0;
+}
+function scopeCat(el){const sc=el.closest('[data-pickscope]');return sc&&sc.querySelector('input.picker[data-kind=cat]')}
+function hl(name,q){if(!q)return esc(name);const i=name.toLowerCase().indexOf(q);return i<0?esc(name):esc(name.slice(0,i))+'<mark>'+esc(name.slice(i,i+q.length))+'</mark>'+esc(name.slice(i+q.length))}
+function renderPick(){
+ const cat=pickEl.dataset.kind==='cat',raw=$('pickSearch').value.trim(),q=raw.toLowerCase(),cur=(pickEl.value||'').toLowerCase();
+ const all=cat?catOptions().map(n=>({name:n})):itemOptions();
+ let list=all;
+ if(q){
+  const rank=n=>{n=n.toLowerCase();return n.startsWith(q)?0:n.split(/[\s&/-]+/).some(w=>w.startsWith(q))?1:n.includes(q)?2:9};
+  list=all.map(x=>({x,r:rank(x.name)})).filter(o=>o.r<9).sort((a,b)=>a.r-b.r||byName(a.x.name,b.x.name)).map(o=>o.x);
+ }
+ const exact=all.some(x=>x.name.toLowerCase()===q);
+ pickRows=list;
+ let h='';
+ if(q&&!exact)h+=`<button class="pick-row pick-add" onclick="pickAdd()">＋ Add “${esc(raw)}” as new ${cat?'category':'item'}</button>`;
+ else if(!q)h+=`<button class="pick-row pick-add" onclick="$('pickSearch').focus()">＋ New ${cat?'category':'item'} — type its name above</button>`;
+ if(!cat&&pickEl.value&&!q)h+=`<button class="pick-row" style="color:var(--muted)" onclick="pickChoose(-1)">Clear item</button>`;
+ if(list.length&&!q)h+=`<div class="pick-sec">${list.length} ${cat?'CATEGORIES':'ITEMS'} · A–Z</div>`;
+ h+=list.map((x,i)=>`<button class="pick-row${x.name.toLowerCase()===cur?' sel':''}" onclick="pickChoose(${i})"><span>${hl(x.name,q)}</span>${!cat&&x.category?`<small>${esc(x.category)}</small>`:''}</button>`).join('');
+ if(q&&!list.length)h+=`<div class="empty">No ${cat?'category':'item'} matches “${esc(raw)}”.</div>`;
+ $('pickList').innerHTML=h;
+}
+function pickEnter(){const q=$('pickSearch').value.trim();if(!q)return;const ex=pickRows.find(x=>x.name.toLowerCase()===q.toLowerCase());if(ex)pickChoose(pickRows.indexOf(ex));else if(pickRows.length===1)pickChoose(0);else pickAdd()}
+function pickChoose(i){
+ if(i<0){setPick(pickEl,'');closeSheet('pickSheet');return}
+ const x=pickRows[i];if(!x)return;
+ setPick(pickEl,x.name);
+ if(pickEl.dataset.kind==='cat'){const sc=pickEl.closest('[data-pickscope]'),it=sc&&sc.querySelector('input.picker[data-kind=item]');
+  if(it&&it.value){const m=(meta.items||[]).find(y=>y.name.toLowerCase()===it.value.toLowerCase());if(m&&m.category!==x.name){m.category=x.name;store.set('fe.c.meta',meta)}}}
+ if(pickEl.dataset.kind==='item'&&x.category){const c=scopeCat(pickEl);if(c)setPick(c,x.category)}
+ closeSheet('pickSheet');pickEl.dispatchEvent(new Event('change'));
+}
+async function pickAdd(){
+ const name=$('pickSearch').value.trim().replace(/\s+/g,' ');if(!name)return;
+ const el=pickEl,cat=el.dataset.kind==='cat';
+ closeSheet('pickSheet');
+ if(cat){
+  try{const r=await api('addCategory',name);meta.categories=r.categories;store.set('fe.c.meta',meta);applyMeta(meta);
+   setPick(el,r.categories.find(c=>c.toLowerCase()===name.toLowerCase())||name);toast(r.exists?'Category already exists — selected':'Category “'+name+'” added')}
+  catch(e){toast(e.message)}
+ }else{
+  setPick(el,name);
+  const c=scopeCat(el),category=c?c.value:'';
+  meta.items=itemOptions().concat({name,category});store.set('fe.c.meta',meta);
+  toast('Item “'+name+'” added — choose its category');
+  if(c)setTimeout(()=>{openPick(c);$('pickTitle').textContent='Category for “'+name+'”'},350);
+  api('addItem',name,category).then(r=>{meta.items=r.items;meta.categories=r.categories;store.set('fe.c.meta',meta)}).catch(()=>{});
+ }
+}
+/* Month split */
+function setSpread(n){$('espread').value=n;splitHint()}
+function stepSpread(d){setSpread(Math.min(60,Math.max(1,(parseInt($('espread').value,10)||1)+d)))}
+function splitHint(){
+ const n=Math.max(1,parseInt($('espread').value,10)||1),a=Number($('eamt').value)||0;
+ document.querySelectorAll('#splitChips button').forEach(b=>b.classList.toggle('on',+b.dataset.n===n));
+ if(n<=1){$('splitHint').textContent='Counted in full in the month it was paid.';return}
+ const d=new Date(($('edate').value||ymd(new Date()))+'T12:00:00'),e=new Date(d.getFullYear(),d.getMonth()+n-1,1);
+ const f=x=>x.toLocaleDateString('en-GB',{month:'short',year:'numeric'});
+ $('splitHint').innerHTML=a>0?`<b>${sar(Math.floor(a/n*100)/100)} per month</b> for ${n} months · ${f(d)} – ${f(e)}`:`Counted as an equal share each month for ${n} months · ${f(d)} – ${f(e)}`;
 }
 function loadMeta(){return cached('meta','getMeta',[],d=>applyMeta(d),()=>{})}
 
@@ -697,7 +796,7 @@ function openTx(src,i){
  generic(x.description||x.category||'Expense',
   `<div class="detail-amt">${sar(x.amount)}</div>`+
   row('Date',niceDate(x.date)+' ('+x.date+')')+row('Category',x.category)+row('Paid by',x.paidBy)+row('Payment method',x.method)+
-  row('Spread over',x.spread>1?x.spread+' months':'')+row('Notes',x.notes)+
+  row('Split over',x.spread>1?`${x.spread} months · ${sar(Math.floor(x.amount/x.spread*100)/100)}/month`:'')+row('Notes',x.notes)+
   `<div class="btnrow"><button class="secondary" onclick="closeSheet('genericSheet');openEdit(window._openTx)">✎ Edit</button><button class="danger-btn" onclick="deleteTx(window._openTx)">Delete</button></div>
    <button class="link full" style="margin-top:10px;padding:10px" onclick="closeSheet('genericSheet')">Close</button>`);
 }
@@ -724,19 +823,20 @@ function setAddMode(m){
 }
 function addMultiRow(focus){
  const id='mr'+(++rowSeq),d=document.createElement('div');
- d.className='card mrow';d.id=id;
+ d.className='card mrow';d.id=id;d.setAttribute('data-pickscope','');
  d.innerHTML=`<div class="mrow-head"><b></b><button class="rm" onclick="removeMultiRow('${id}')">Remove</button></div>
   <div class="twocol"><div class="field"><label>AMOUNT</label><input type="number" step="0.01" min="0" inputmode="decimal" class="m-amt" placeholder="0.00" oninput="updMulti()"></div>
-  <div class="field"><label>CATEGORY</label><select class="m-cat catsel" onchange="catPicked(this)"></select></div></div>
-  <div class="field" style="margin-bottom:0"><label>ITEM / DESCRIPTION</label><input class="m-desc" list="descList" autocomplete="off" placeholder="What was it?" onchange="descPicked(this,this.closest('.mrow').querySelector('.m-cat'))"></div>`;
+  <div class="field"><label>CATEGORY</label><input class="m-cat picker" data-kind="cat" readonly placeholder="Choose" onclick="openPick(this)"></div></div>
+  <div class="mgrid"><div class="field" style="margin-bottom:0"><label>ITEM</label><input class="m-desc picker" data-kind="item" readonly placeholder="Choose or add" onclick="openPick(this)"></div>
+  <div class="field" style="margin-bottom:0"><label>MONTHS</label><input type="number" min="1" max="60" value="1" inputmode="numeric" class="m-spread" title="Split cost over this many months"></div></div>`;
  $('multiRows').appendChild(d);
- fillCatSelect(d.querySelector('.m-cat'),store.get('fe.lastCat',''));
+ setPick(d.querySelector('.m-cat'),store.get('fe.lastCat',''));
  updMulti();
  if(focus)setTimeout(()=>{d.scrollIntoView({behavior:'smooth',block:'center'});d.querySelector('.m-amt').focus()},50);
 }
 function removeMultiRow(id){
  const rows=document.querySelectorAll('#multiRows .mrow');
- if(rows.length<=1){const r=$(id);r.querySelector('.m-amt').value='';r.querySelector('.m-desc').value='';updMulti();return}
+ if(rows.length<=1){const r=$(id);r.querySelector('.m-amt').value='';r.querySelector('.m-desc').value='';r.querySelector('.m-spread').value=1;updMulti();return}
  $(id).remove();updMulti();
 }
 function updMulti(){
@@ -748,10 +848,10 @@ async function saveMulti(){
  const msg=$('multiMsg');msg.className='msg err';msg.textContent='';
  const items=[];let bad=0;
  document.querySelectorAll('#multiRows .mrow').forEach((r,i)=>{
-  const a=r.querySelector('.m-amt').value,d=r.querySelector('.m-desc').value.trim(),c=r.querySelector('.m-cat').value;
+  const a=r.querySelector('.m-amt').value,d=r.querySelector('.m-desc').value.trim(),c=r.querySelector('.m-cat').value,sp=Math.max(1,parseInt(r.querySelector('.m-spread').value,10)||1);
   if(!a&&!d)return;
   if(!(Number(a)>0)){bad=bad||i+1;return}
-  items.push({amount:a,description:d,category:c});
+  items.push({amount:a,description:d,category:c,spreadMonths:sp});
  });
  if(bad)return msg.textContent='Item '+bad+' needs an amount greater than zero.';
  if(!items.length)return msg.textContent='Enter at least one amount.';
@@ -768,17 +868,8 @@ async function saveMulti(){
  }catch(e){msg.textContent=e.message}
  finally{b.disabled=false;b.textContent='Save all'}
 }
-function descPicked(inp,sel){
- const c=meta.descCats&&meta.descCats[inp.value.trim()];
- if(c&&sel&&catOptions().includes(c)){sel.value=c;sel.dataset.prev=c}
-}
-function catPicked(sel){
- if(sel.value!=='__new__'){sel.dataset.prev=sel.value;return}
- sel.value=sel.dataset.prev||catOptions()[0];
- openCategorySheet(sel);
-}
 async function saveExpense(){
- const o={date:$('edate').value,description:$('edesc').value.trim(),category:$('ecat').value,amount:$('eamt').value,paidBy:$('epaid').value.trim(),paymentMethod:$('emethod').value.trim(),spreadMonths:$('espread').value||1,notes:$('enotes').value.trim()};
+ const o={date:$('edate').value,description:$('edesc').value.trim(),category:$('ecat').value||'Other',amount:$('eamt').value,paidBy:$('epaid').value.trim(),paymentMethod:$('emethod').value.trim(),spreadMonths:$('espread').value||1,notes:$('enotes').value.trim()};
  const msg=$('saveMsg');msg.className='msg';
  if(!(Number(o.amount)>0)){msg.className='msg err';msg.textContent='Enter an amount greater than zero.';return $('eamt').focus()}
  if(!o.date){msg.className='msg err';msg.textContent='Choose a date.';return}
@@ -803,11 +894,10 @@ function openEdit(x){
  $('addTitle').textContent='Edit expense';$('addCancel').style.display='';
  $('saveBtn').textContent='Save changes';$('delBtn').style.display='';
  $('eamt').value=x.amount;$('edesc').value=x.description||'';
- if(x.category&&!catOptions().includes(x.category)){meta.categories=catOptions().concat(x.category).sort();applyMeta(meta)}
- fillCatSelect($('ecat'),x.category||'Other');
+ setPick($('ecat'),x.category||'Other');
  $('edate').value=x.date;$('epaid').value=x.paidBy||'';$('emethod').value=x.method||'';
  $('espread').value=x.spread||1;$('enotes').value=x.notes||'';
- $('emore').open=!!(x.method||x.notes||x.spread>1);
+ $('emore').open=!!(x.method||x.notes);splitHint();
  $('saveMsg').textContent='';
 }
 function resetAddForm(){
@@ -816,7 +906,7 @@ function resetAddForm(){
  $('saveBtn').textContent='Save expense';$('delBtn').style.display='none';
  ['eamt','edesc','enotes'].forEach(id=>$(id).value='');$('espread').value=1;$('edate').value=ymd(new Date());
  $('epaid').value=store.get('fe.lastPaid','');$('emethod').value=store.get('fe.lastMethod','');
- fillCatSelect($('ecat'),store.get('fe.lastCat',''));$('saveMsg').textContent='';$('emore').open=false;
+ setPick($('ecat'),store.get('fe.lastCat',''));$('saveMsg').textContent='';$('emore').open=false;splitHint();
 }
 function cancelEdit(){const back=editingTx&&editingTx._from||'transactions';resetAddForm();go(back)}
 function deleteEditing(){const x=editingTx,back=x&&x._from||'transactions';deleteTx(x,()=>{resetAddForm();go(back)})}
@@ -833,7 +923,7 @@ async function saveCategory(){
  try{
   const r=await api('addCategory',n);meta.categories=r.categories;store.set('fe.c.meta',meta);applyMeta(meta);
   const real=r.categories.find(c=>c.toLowerCase()===n.toLowerCase())||n;
-  if(catTarget){fillCatSelect(catTarget,real)}
+  if(catTarget){setPick(catTarget,real)}
   closeSheet('genericSheet');toast(r.exists?'Category already exists — selected':'Category added');
  }catch(e){$('newCatMsg').className='msg err';$('newCatMsg').textContent=e.message;$('newCatBtn').disabled=false}
 }
@@ -920,7 +1010,7 @@ function loadRecurringList(){
 function showRecurringForm(i){
  const x=i==null?null:recurringCache[i];
  show('recurringAdd');
- const cats=catOptions();fillCatSelect($('rfCat'),x&&x.category||cats[0]);
+ setPick($('rfCat'),x&&x.category||'');
  $('rfTitle').textContent=x?'Edit recurring expense':'New recurring expense';
  $('rfId').value=x?x.id:'';$('rfName').value=x?x.name:'';$('rfAmt').value=x?x.amount:'';
  $('rfFreq').value=x?x.frequency:'Monthly';$('rfStart').value=x&&x.startDate||ymd(new Date());
@@ -1057,7 +1147,7 @@ async function installApp(){
 /* ---------- Start ---------- */
 function startApp(){
  const saved=store.get('fe.period',{k:'this'});
- applyMeta(meta);fillCatSelect($('ecat'),store.get('fe.lastCat',''));
+ applyMeta(meta);setPick($('ecat'),store.get('fe.lastCat',''));splitHint();
  $('mdate').value=ymd(new Date());if(store.get('fe.addMode')==='multi')setAddMode('multi');
  $('epaid').value=store.get('fe.lastPaid','');$('emethod').value=store.get('fe.lastMethod','');
  show('home');loadMeta();
@@ -1080,7 +1170,15 @@ document.addEventListener('DOMContentLoaded',()=>{
  $('versionLine').textContent='App '+APP_VERSION;
  startApp();
 });
-if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
+// Updates: check for a new version on start and whenever the app is reopened; reload once it is ready.
+if('serviceWorker' in navigator){
+ const hadController=!!navigator.serviceWorker.controller;let reloading=false;
+ navigator.serviceWorker.addEventListener('controllerchange',()=>{if(!hadController||reloading)return;reloading=true;location.reload()});
+ window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(reg=>{
+  reg.update().catch(()=>{});
+  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')reg.update().catch(()=>{})});
+ }).catch(()=>{}));
+}
 </script>
 </body>
 </html>

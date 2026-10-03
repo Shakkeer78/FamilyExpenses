@@ -1,6 +1,6 @@
 /* Family Expenses service worker.
    Change VERSION whenever you upload new app files so phones pick up the update. */
-const VERSION='fe-5.1.0';
+const VERSION='fe-5.2.0';
 const SHELL=['./','./index.html','./manifest.webmanifest','./icon-192.png','./icon-512.png','./apple-touch-icon.png'];
 const CHART='https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js';
 
@@ -18,7 +18,7 @@ self.addEventListener('fetch',e=>{
 
   // Pages: try the network first so updates arrive, fall back to the saved copy offline.
   if(req.mode==='navigate'){
-    e.respondWith(fetch(req).then(r=>{const copy=r.clone();caches.open(VERSION).then(c=>c.put('./index.html',copy));return r})
+    e.respondWith(fetch(req,{cache:'no-store'}).then(r=>{const copy=r.clone();caches.open(VERSION).then(c=>c.put('./index.html',copy));return r})
       .catch(()=>caches.match('./index.html')));
     return;
   }
