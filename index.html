@@ -183,6 +183,13 @@ details.more[open] summary:before{content:"－ "}
 .connect-sub{text-align:center;color:var(--muted);font-size:14px;margin:6px 10px 18px;line-height:1.5}
 code{background:#f2f4f7;padding:1px 5px;border-radius:5px;font-size:13px}
 
+/* v5.2.1 data check */
+.issue-bar{width:100%;border:0;background:#fffaeb;color:#93370d;border-radius:14px;padding:12px 14px;margin:0 0 10px;font-weight:750;font-size:14px;text-align:left;display:flex;justify-content:space-between;gap:10px}
+.issue{border-bottom:1px solid #f1f3f7;padding:12px 0}
+.issue:last-child{border:0}
+.issue b{display:block;font-size:15px}
+.issue small{display:block;color:var(--muted);font-size:12px;margin-top:2px}
+.issue ul{margin:6px 0 8px;padding-left:18px;color:#b42318;font-size:13px}
 /* v5.2 picker + split */
 input.picker{cursor:pointer;caret-color:transparent;background-image:linear-gradient(45deg,transparent 50%,#98a2b3 50%),linear-gradient(135deg,#98a2b3 50%,transparent 50%);background-position:calc(100% - 18px) 22px,calc(100% - 13px) 22px;background-size:5px 5px;background-repeat:no-repeat;padding-right:32px;text-overflow:ellipsis}
 .pick-sheet{height:86vh;display:flex;flex-direction:column;overflow:hidden!important}
@@ -274,6 +281,7 @@ input.picker{cursor:pointer;caret-color:transparent;background-image:linear-grad
    <div><div class="eyebrow">Spending period</div><h2 id="homeLabel">This month</h2></div>
    <button class="chip" onclick="openSheet('periodSheet')">Change</button>
   </div>
+  <button class="issue-bar" id="issueBar" style="display:none" onclick="openIssues()"></button>
   <div class="hero">
    <div class="hero-top">Total spending</div>
    <div class="hero-total" id="spent">—</div>
@@ -457,6 +465,7 @@ input.picker{cursor:pointer;caret-color:transparent;background-image:linear-grad
    <button class="menuitem" onclick="openReports()"><span>📄 Saved reports</span><span class="chev">›</span></button>
    <button class="menuitem" onclick="openCategorySheet()"><span>🏷 New category</span><span class="chev">›</span></button>
    <button class="menuitem" onclick="openImport()"><span>⬆ Import CSV</span><span class="chev">›</span></button>
+   <button class="menuitem" onclick="openIssues()"><span>🩺 Check data</span><span class="chev">›</span></button>
   </div>
   <div class="menu">
    <button class="menuitem" id="installItem" onclick="installApp()"><span>📲 Install on this phone</span><span class="chev">›</span></button>
@@ -519,7 +528,7 @@ input.picker{cursor:pointer;caret-color:transparent;background-image:linear-grad
 
 <script>
 'use strict';
-const APP_VERSION='5.2.0';
+const APP_VERSION='5.2.1';
 const $=id=>document.getElementById(id);
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const sar=n=>'SAR '+Number(n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -769,7 +778,29 @@ function loadRecurringHome(){
   $('recurringMini').innerHTML=(rows||[]).map(homeRecHtml).join('')||'<div class="empty">No active recurring expenses.</div>';
  },e=>{$('recurringMini').innerHTML=errorBox('Recurring expenses could not load.',e,'loadRecurringHome()')});
 }
-function loadHome(){lastLoad=Date.now();loadHomeSummary();loadHomeRecent();loadRecurringHome()}
+function loadHome(){lastLoad=Date.now();loadHomeSummary();loadHomeRecent();loadRecurringHome();loadIssues()}
+let issuesCache=[];
+function loadIssues(){
+ cached('issues','dataIssues',[],d=>{
+  issuesCache=d||[];const n=issuesCache.length,b=$('issueBar');
+  b.style.display=n?'':'none';
+  b.innerHTML=`<span>⚠ ${n} entr${n===1?'y needs':'ies need'} fixing</span><span>Review ›</span>`;
+ },()=>{});
+}
+async function openIssues(){
+ generic('Check data',skeleton(3));
+ try{issuesCache=await api('dataIssues');store.set('fe.c.issues',issuesCache)}catch(e){return generic('Check data',errorBox('Could not check data.',e,'openIssues()'))}
+ $('issueBar').style.display=issuesCache.length?'':'none';
+ if(!issuesCache.length)return generic('Check data','<div class="empty">✓ No problems found. All entries look good.</div>');
+ generic('Check data','<p class="hint" style="margin-top:-6px">These entries have a value the app can\'t use (often a date that Google Sheets created from typed text). Tap Fix, choose the right value and save.</p>'+
+  issuesCache.map((x,i)=>`<div class="issue"><b>${esc(x.name)} · ${sar(x.amount)}</b><small>${x.kind==='rec'?'Recurring expense':'Expense'} · ${esc(x.sheet)} sheet, row ${x.row}</small><ul>${x.problems.map(p=>'<li>'+esc(p)+'</li>').join('')}</ul><button class="secondary full" onclick="fixIssue(${i})">Fix</button></div>`).join(''));
+}
+function fixIssue(i){
+ const x=issuesCache[i];if(!x)return;closeSheet('genericSheet');
+ if(x.kind==='tx'){openEdit(x.tx);if(!x.tx.category){$('saveMsg').className='msg err';$('saveMsg').textContent='Choose the correct category, then Save changes.'}}
+ else{goRecurring();const go2=()=>{const k=recurringCache.findIndex(r=>String(r.id)===String(x.id));if(k>=0){showRecurringForm(k);$('rfMsg').className='msg err';$('rfMsg').textContent='Check the highlighted values, choose the correct category, then save.'}else toast('Could not find this entry — refresh and try again.')};
+  if(recurringCache.length)go2();else setTimeout(go2,1500)}
+}
 
 /* ---------- Transactions ---------- */
 let txTimer;
@@ -869,6 +900,7 @@ async function saveMulti(){
  finally{b.disabled=false;b.textContent='Save all'}
 }
 async function saveExpense(){
+ if(editingTx&&!$('ecat').value){$('saveMsg').className='msg err';$('saveMsg').textContent='Choose a category.';return}
  const o={date:$('edate').value,description:$('edesc').value.trim(),category:$('ecat').value||'Other',amount:$('eamt').value,paidBy:$('epaid').value.trim(),paymentMethod:$('emethod').value.trim(),spreadMonths:$('espread').value||1,notes:$('enotes').value.trim()};
  const msg=$('saveMsg');msg.className='msg';
  if(!(Number(o.amount)>0)){msg.className='msg err';msg.textContent='Enter an amount greater than zero.';return $('eamt').focus()}
@@ -894,7 +926,7 @@ function openEdit(x){
  $('addTitle').textContent='Edit expense';$('addCancel').style.display='';
  $('saveBtn').textContent='Save changes';$('delBtn').style.display='';
  $('eamt').value=x.amount;$('edesc').value=x.description||'';
- setPick($('ecat'),x.category||'Other');
+ setPick($('ecat'),!x.category||x.category==='Uncategorised'?'':x.category);
  $('edate').value=x.date;$('epaid').value=x.paidBy||'';$('emethod').value=x.method||'';
  $('espread').value=x.spread||1;$('enotes').value=x.notes||'';
  $('emore').open=!!(x.method||x.notes);splitHint();
@@ -1010,7 +1042,7 @@ function loadRecurringList(){
 function showRecurringForm(i){
  const x=i==null?null:recurringCache[i];
  show('recurringAdd');
- setPick($('rfCat'),x&&x.category||'');
+ setPick($('rfCat'),x&&x.category&&x.category!=='Uncategorised'?x.category:'');
  $('rfTitle').textContent=x?'Edit recurring expense':'New recurring expense';
  $('rfId').value=x?x.id:'';$('rfName').value=x?x.name:'';$('rfAmt').value=x?x.amount:'';
  $('rfFreq').value=x?x.frequency:'Monthly';$('rfStart').value=x&&x.startDate||ymd(new Date());
@@ -1024,9 +1056,10 @@ async function saveRecurring(){
  if(!o.name)return m.textContent='Name is required.';
  if(!(Number(o.amount)>0))return m.textContent='Enter a valid amount.';
  if(!o.startDate)return m.textContent='Start date is required.';
+ if(!o.category)return m.textContent='Choose a category.';
  if(o.endDate&&o.endDate<o.startDate)return m.textContent='End date cannot be before the start date.';
  const b=$('rfBtn');b.disabled=true;m.className='msg';m.textContent='Saving…';
- try{await api(o.id?'updateFixedExpense':'addFixedExpense',o);store.clearCache();toast('Recurring expense saved');goRecurring()}
+ try{await api(o.id?'updateFixedExpense':'addFixedExpense',o);store.clearCache();toast('Recurring expense saved');loadIssues();goRecurring()}
  catch(e){m.className='msg err';m.textContent=e.message}
  finally{b.disabled=false}
 }
