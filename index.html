@@ -348,10 +348,7 @@ input.picker{cursor:pointer;caret-color:transparent;background-image:linear-grad
    </div>
    <div class="hero-forecast" id="heroForecast" style="display:none"></div>
   </div>
-  <div class="alltime">
-   <div><span>ALL-TIME EXPENSES</span><strong id="alltime">—</strong></div>
-   <button class="link" onclick="go('transactions')">View all ›</button>
-  </div>
+  <div style="height:4px"></div>
   <div class="card" id="budgetCard" style="display:none">
    <div class="cardhead"><div><span class="eyebrow" id="budgetEyebrow">Budgets</span><h3>Monthly budgets</h3></div><button class="link" onclick="openBudgets()">Edit</button></div>
    <div id="budgetList"></div>
@@ -461,6 +458,7 @@ input.picker{cursor:pointer;caret-color:transparent;background-image:linear-grad
    <div class="stat"><span>DAILY AVERAGE</span><b id="ovDaily">—</b><small id="ovDailySub">&nbsp;</small></div>
    <div class="stat"><span>TRANSACTIONS</span><b id="ovCount">—</b><small id="ovCountSub">&nbsp;</small></div>
   </div>
+  <div class="card" id="allTimeCard"><button class="secondary full" id="allTimeBtn" onclick="showAllTime()">Σ Show all-time total</button><div id="allTimeBox"></div></div>
 
   <div class="card">
    <div class="cardhead"><div><span class="eyebrow">Breakdown</span><h3>By category</h3></div></div>
@@ -611,7 +609,7 @@ input.picker{cursor:pointer;caret-color:transparent;background-image:linear-grad
 
 <script>
 'use strict';
-const APP_VERSION='5.3.0';
+const APP_VERSION='5.4.0';
 const $=id=>document.getElementById(id);
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const sar=n=>'SAR '+Number(n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -680,7 +678,7 @@ function go(id){
  show(id);
  if(id==='home')loadHome();
  if(id==='transactions')loadTx();
- if(id==='analysis'){if(anTab==='compare')loadCompare();else loadOverview()}
+ if(id==='analysis'){hideAllTime();if(anTab==='compare')loadCompare();else loadOverview()}
  if(id==='add'&&addMode==='single'&&!$('eamt').value)setTimeout(()=>$('eamt').focus(),250);
 }
 function refreshCurrent(){
@@ -834,7 +832,8 @@ function setPeriodRange(a,b,title,k){
 }
 function pkey(){return period.start+'_'+period.end}
 function homeTxHtml(x,i,src){return `<button class="tx" onclick="openTx('${src}',${i})"><div class="txicon">${iconFor(x.category)}</div><div style="min-width:0"><div class="txname">${esc(x.description||x.category||'Expense')}</div><div class="txmeta">${esc(x.category||'Other')} · ${esc(niceDate(x.date))}</div></div><div class="txamt">${sar(x.amount)}</div></button>`}
-function homeRecHtml(x){return `<div class="tx"><div class="txicon">↻</div><div style="min-width:0"><div class="txname">${esc(x.name)}</div><div class="txmeta">${esc(x.frequency)} · ${esc(x.category||'Other')}</div></div><div class="txamt">${sar(x.amount)}</div></div>`}
+function shareTxt(x){const n=/quarter/i.test(x.frequency)?3:/half/i.test(x.frequency)?6:/year/i.test(x.frequency)?12:1;return n>1?` · ${sar(Math.floor(x.amount/n*100)/100)}/month`:''}
+function homeRecHtml(x){return `<div class="tx"><div class="txicon">↻</div><div style="min-width:0"><div class="txname">${esc(x.name)}</div><div class="txmeta">${esc(x.frequency)}${shareTxt(x)} · ${esc(x.category||'Other')}</div></div><div class="txamt">${sar(x.amount)}</div></div>`}
 
 function loadHomeSummary(){
  if(!store.get('fe.c.sum_'+pkey()))$('catlist').innerHTML=skeleton(4);
@@ -843,7 +842,6 @@ function loadHomeSummary(){
   $('txcount').textContent=`${d.filteredCount||0} transaction${d.filteredCount===1?'':'s'} · ${d.recurringCount||0} recurring charge${d.recurringCount===1?'':'s'}`;
   $('manualPart').textContent=sar(d.transactionActual);
   $('recurringPart').textContent=sar(d.recurringActual);
-  $('alltime').textContent=sar(d.allTimeTotal);
   const cats=d.category||[];
   $('catlist').innerHTML=cats.slice(0,5).map(c=>`<div class="catrow"><span class="catname">${esc(c.name)}</span><span class="pct">${Number(c.percentage||0).toFixed(1)}%</span><span class="money">${sar(c.value)}</span><div class="barbg"><div class="bar" style="width:${Math.min(100,Number(c.percentage||0))}%"></div></div></div>`).join('')||'<div class="empty">No expenses in this period.</div>';
   $('homeChartWrap').style.display=cats.length&&window.Chart?'':'none';
@@ -891,7 +889,7 @@ function loadExtras(){
   // bills due in the next 7 days
   const bl=d.bills||[];
   $('billsCard').style.display=bl.length?'':'none';
-  $('billsList').innerHTML=bl.map(x=>`<div class="tx"><div class="txicon">🗓</div><div style="min-width:0"><div class="txname">${esc(x.name)}</div><div class="txmeta">${x.days===0?'<b style="color:#b54708">Due today</b>':x.days===1?'Due tomorrow':'Due in '+x.days+' days'} · ${esc(niceDate(x.date))}</div></div><div class="txamt">${sar(x.amount)}</div></div>`).join('');
+  $('billsList').innerHTML=bl.map(x=>`<div class="tx"><div class="txicon">🗓</div><div style="min-width:0"><div class="txname">${esc(x.name)}</div><div class="txmeta">${x.days===0?'<b style="color:#b54708">Due today</b>':x.days===1?'Due tomorrow':'Due in '+x.days+' days'} · ${esc(niceDate(x.date))}${x.parts>1?` · share ${x.part}/${x.parts} of ${sar(x.full)}`:''}</div></div><div class="txamt">${sar(x.amount)}</div></div>`).join('');
  },()=>{});
 }
 async function openBudgets(){
@@ -1150,6 +1148,19 @@ function cols(list,curIdx){
  return list.map((x,i)=>`<button class="col${i===curIdx?' cur':''}" onclick="toast('${esc(x.full||x.label)}: ${sar(x.a+(x.b||0))}${x.b?' (incl. '+sar(x.b)+' recurring)':''}')"><div class="stk" style="height:${Math.max(1.5,(x.a+(x.b||0))/max*100)}%"><div class="s1" style="flex:${x.a}"></div>${x.b?`<div class="s2" style="flex:${x.b}"></div>`:''}</div><small>${esc(x.label)}</small></button>`).join('');
 }
 const MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+function hideAllTime(){$('allTimeBox').innerHTML='';$('allTimeBtn').style.display=''}
+async function showAllTime(){
+ $('allTimeBtn').style.display='none';$('allTimeBox').innerHTML=skeleton(3);
+ try{
+  const d=await api('getAllTime');
+  $('allTimeBox').innerHTML=`<div class="cardhead"><div><span class="eyebrow">All time · up to today</span><h3 style="font-size:26px;letter-spacing:-.6px">${sar(d.total)}</h3></div><button class="link" onclick="hideAllTime()">Hide</button></div>
+   <div class="detail-row"><span>Expenses</span><b>${sar(d.expenses)}</b></div>
+   <div class="detail-row"><span>Recurring (monthly shares)</span><b>${sar(d.recurring)}</b></div>
+   <div class="detail-row"><span>Since</span><b>${esc(niceDate(d.since))} · ${d.months} month${d.months===1?'':'s'}</b></div>
+   <div class="detail-row" style="border:0"><span>Average per month</span><b>${sar(d.perMonth)}</b></div>
+   <p class="hint" style="margin:6px 0 0">Split expenses and quarterly/yearly bills count only the monthly portions up to today.</p>`;
+ }catch(e){$('allTimeBox').innerHTML=errorBox('Could not calculate.',e,'showAllTime()')}
+}
 function setAnPeriod(k){anKey={k};loadOverview()}
 function openAnCustom(){if(anKey.k==='custom'){$('anFrom').value=anKey.a;$('anTo').value=anKey.b}openSheet('anPeriodSheet')}
 function applyAnCustom(){
@@ -1211,11 +1222,16 @@ function loadCompare(){
  if(!store.get('fe.c.'+key))['cmpCats','cmpAvg','cmpGrid','cmpLY','cmpItems'].forEach(id=>$(id).innerHTML=skeleton(3));
  cached(key,'compareData',[{a:A,b:B}],d=>{cmpData=d;renderCompare()},e=>{$('cmpCats').innerHTML=errorBox('Comparison could not load.',e,'loadCompare()')});
 }
+function showUpcoming(){
+ const u=cmpData&&cmpData.upcoming;if(!u)return;
+ generic('Still due in '+ymName(cmpData.a),'<p class="hint" style="margin-top:-6px">Counted on their dates. Totals up to today don\'t include these yet.</p><div class="flat">'+u.items.map(x=>`<div class="tx"><div class="txicon">${x.kind==='rec'?'🗓':'½'}</div><div style="min-width:0"><div class="txname">${esc(x.name)}</div><div class="txmeta">${x.kind==='rec'?'Recurring':'Split portion'} · ${esc(niceDate(x.date))}</div></div><div class="txamt">${sar(x.amount)}</div></div>`).join('')+`</div><div class="detail-row" style="border:0;margin-top:6px"><span>Total still due</span><b>${sar(u.total)}</b></div>`);
+}
 function setAvgN(n){avgN=n;document.querySelectorAll('#avgTabs button').forEach(b=>b.classList.toggle('on',+b.dataset.n===n));if(cmpData)renderAvg()}
 function renderCompare(){
  const d=cmpData,A=d.a,B=d.b,an=ymName(A,1),bn=ymName(B,1),inProg=A===d.current;
  $('cmpTotals').innerHTML=`<div><span>${esc(ymName(A))}${inProg?' · in progress':''}</span><b>${sar(d.A.total)}</b></div><div><span>${esc(ymName(B))}</span><b>${sar(d.B.total)}</b></div>
-  <div class="cmp-diff">${d.A.total===d.B.total?'Same as '+esc(bn):`${chg(d.A.total,d.B.total,1)} <span style="color:var(--muted);font-weight:650">vs ${esc(bn)}</span>`}</div>`;
+  <div class="cmp-diff">${d.A.total===d.B.total?'Same as '+esc(bn):`${chg(d.A.total,d.B.total,1)} <span style="color:var(--muted);font-weight:650">vs ${esc(bn)}</span>`}</div>
+  ${inProg&&d.upcoming&&d.upcoming.total>0?`<button class="issue-bar cmp-diff" style="margin:4px 0 0;background:#eef4ff!important;color:var(--blue);padding:10px 12px!important;border-radius:12px" onclick="showUpcoming()"><span>+ ${sar(d.upcoming.total)} still due in ${esc(ymName(A,1))} (not counted yet)</span><span>›</span></button>`:''}`;
  // pace
  if(d.pace){$('cmpPaceCard').style.display='';
   const p=d.pace,diff=p.a-p.b;
@@ -1280,7 +1296,7 @@ function loadRecurringList(){
   recurringCache=d||[];
   $('recurringList').innerHTML=recurringCache.map((x,i)=>`<div class="rec-card ${x.active?'':'rec-off'}">
    <div class="rec-top"><div style="min-width:0"><div class="rec-name">${esc(x.name)}<span class="pill">${x.active?'ACTIVE':'PAUSED'}</span></div>
-   <div class="rec-meta">${esc(x.frequency)} · ${esc(x.category||'Other')}<br>From ${esc(x.startDate||'—')}${x.endDate?' to '+esc(x.endDate):''}${x.dueDay?' · due day '+esc(x.dueDay):''}</div></div>
+   <div class="rec-meta">${esc(x.frequency)}${shareTxt(x)} · ${esc(x.category||'Other')}<br>From ${esc(x.startDate||'—')}${x.endDate?' to '+esc(x.endDate):''}${x.dueDay?' · due day '+esc(x.dueDay):''}</div></div>
    <div class="rec-amt">${sar(x.amount)}</div></div>
    <div class="rec-actions">
     <button onclick="showRecurringForm(${i})">Edit</button>
