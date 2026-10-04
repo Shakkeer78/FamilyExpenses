@@ -183,6 +183,15 @@ details.more[open] summary:before{content:"－ "}
 .connect-sub{text-align:center;color:var(--muted);font-size:14px;margin:6px 10px 18px;line-height:1.5}
 code{background:#f2f4f7;padding:1px 5px;border-radius:5px;font-size:13px}
 
+/* v5.6 catalog */
+.crow{width:100%;border:0;background:#fff;border-radius:15px;padding:13px 14px;margin-bottom:8px;box-shadow:0 3px 14px rgba(16,24,40,.045);display:flex;justify-content:space-between;align-items:center;gap:10px;text-align:left}
+.crow b{font-size:15.5px;display:block}
+.crow small{display:block;color:var(--muted);font-size:12.5px;margin-top:3px}
+.crow.hid{opacity:.6}
+.crow .chev{color:var(--faint);font-size:20px}
+.pill2{display:inline-block;font-size:10px;font-weight:850;padding:2px 6px;border-radius:6px;background:#f2f4f7;color:#667085;margin-left:6px;vertical-align:2px}
+.act{display:grid;gap:9px;margin-top:14px}
+.usage{background:#f7f9fd;border-radius:13px;padding:12px 14px;font-size:14px;line-height:1.6}
 /* v5.5 split payments */
 .seg.stype{margin-top:10px;display:none}
 .seg.stype.show{display:flex}
@@ -574,6 +583,15 @@ input.picker{cursor:pointer;caret-color:transparent;background-image:linear-grad
   </div>
  </section>
 
+ <!-- CATEGORIES & ITEMS -->
+ <section id="catalog" class="screen">
+  <div class="screenhead"><h2>Categories &amp; items</h2><button class="chip" onclick="go('more')">Back</button></div>
+  <div class="seg" id="catTabs"><button class="on" data-t="cat" onclick="setCatTab('cat')">Categories</button><button data-t="item" onclick="setCatTab('item')">Items</button></div>
+  <div class="searchrow"><input id="catSearch" type="search" placeholder="Search…" oninput="renderCatalog()"><button class="allm" style="color:var(--blue);border:0" onclick="catalogAdd()">＋ Add</button></div>
+  <p class="hint" style="margin:6px 3px 10px">Tap a name to rename, merge, hide or delete it. Renaming also updates past expenses.</p>
+  <div id="catList"></div>
+ </section>
+
  <!-- SPLIT PAYMENTS -->
  <section id="splits" class="screen">
   <div class="screenhead"><h2>Split payments</h2><button class="chip" onclick="go('more')">Back</button></div>
@@ -590,7 +608,7 @@ input.picker{cursor:pointer;caret-color:transparent;background-image:linear-grad
    <button class="menuitem" onclick="go('analysis');setAnTab('compare')"><span>⇄ Compare months</span><span class="chev">›</span></button>
    <button class="menuitem" onclick="openBudgets()"><span>🎯 Monthly budgets</span><span class="chev">›</span></button>
    <button class="menuitem" onclick="openReports()"><span>📄 Saved reports</span><span class="chev">›</span></button>
-   <button class="menuitem" onclick="openCategorySheet()"><span>🏷 New category</span><span class="chev">›</span></button>
+   <button class="menuitem" onclick="goCatalog()"><span>🏷 Categories &amp; items</span><span class="chev">›</span></button>
    <button class="menuitem" onclick="openImport()"><span>⬆ Import CSV</span><span class="chev">›</span></button>
    <button class="menuitem" onclick="openIssues()"><span>🩺 Check data</span><span class="chev">›</span></button>
   </div>
@@ -654,7 +672,7 @@ input.picker{cursor:pointer;caret-color:transparent;background-image:linear-grad
 
 <script>
 'use strict';
-const APP_VERSION='5.5.1';
+const APP_VERSION='5.6.0';
 const $=id=>document.getElementById(id);
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const sar=n=>'SAR '+Number(n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -710,7 +728,7 @@ function errorBox(title,e,retry){
 function skeleton(n){return Array.from({length:n||3},()=>'<div class="skeleton"></div>').join('')}
 
 /* ---------- Navigation ---------- */
-const NAV_OF={recurring:'more',recurringAdd:'more',splits:'more',connect:''};
+const NAV_OF={recurring:'more',recurringAdd:'more',splits:'more',catalog:'more',connect:''};
 function show(id){
  if(id!=='add'&&editingTx)resetAddForm();
  document.querySelectorAll('.screen').forEach(x=>x.classList.toggle('active',x.id===id));
@@ -732,6 +750,7 @@ function refreshCurrent(){
  else if(current==='analysis'){if(anTab==='compare')loadCompare();else loadOverview()}
  else if(current==='recurring')loadRecurringList();
  else if(current==='splits')loadSplits();
+ else if(current==='catalog')loadCatalog();
  else loadMeta();
 }
 function openSheet(id){$(id).classList.add('open')}
@@ -1377,6 +1396,71 @@ function runCustom(){
 }
 
 /* ---------- Recurring ---------- */
+/* ---------- Categories & items ---------- */
+let catalog={categories:[],items:[]},catTab='cat',catSel=null;
+function goCatalog(){show('catalog');loadCatalog()}
+function setCatTab(t){catTab=t;document.querySelectorAll('#catTabs button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));$('catSearch').value='';renderCatalog()}
+function loadCatalog(){
+ if(!catalog.categories.length)$('catList').innerHTML=skeleton(6);
+ api('getCatalog').then(d=>{catalog=d;renderCatalog()}).catch(e=>{$('catList').innerHTML=errorBox('Could not load.',e,'loadCatalog()')});
+}
+function usageTxt(x){
+ if(catTab==='cat'){const p=[];p.push(`${x.tx} expense${x.tx===1?'':'s'}`);if(x.rec)p.push(`${x.rec} recurring`);if(x.budget)p.push(`budget ${sar(x.budget)}`);if(x.items)p.push(`${x.items} item${x.items===1?'':'s'}`);return p.join(' · ')}
+ return `${x.tx} expense${x.tx===1?'':'s'}${x.category?' · usual: '+x.category:''}`;
+}
+function renderCatalog(){
+ const q=$('catSearch').value.trim().toLowerCase(),list=(catTab==='cat'?catalog.categories:catalog.items).filter(x=>!q||x.name.toLowerCase().includes(q));
+ $('catList').innerHTML=list.map(x=>`<button class="crow${x.hidden?' hid':''}" onclick="openCatalogItem(${JSON.stringify(x.name).replace(/"/g,'&quot;')})"><div style="min-width:0"><b>${esc(x.name)}${x.hidden?'<span class="pill2">HIDDEN</span>':''}${x.protected?'<span class="pill2">BUILT-IN</span>':''}</b><small>${esc(usageTxt(x))}</small></div><span class="chev">›</span></button>`).join('')||`<div class="empty">Nothing matches “${esc(q)}”.</div>`;
+}
+function others(name){return (catTab==='cat'?catalog.categories:catalog.items).filter(x=>x.name!==name&&!x.hidden).map(x=>x.name)}
+function selHtml(id,opts,ph){return `<select id="${id}"><option value="">${esc(ph)}</option>${opts.map(o=>`<option>${esc(o)}</option>`).join('')}</select>`}
+function openCatalogItem(name){
+ const isCat=catTab==='cat',x=(isCat?catalog.categories:catalog.items).find(y=>y.name===name);if(!x)return;catSel=x;
+ const used=isCat?x.tx+x.rec:x.tx,kind=isCat?'category':'item';
+ let h=`<div class="usage">Used in <b>${x.tx}</b> expense${x.tx===1?'':'s'}${isCat&&x.rec?`, <b>${x.rec}</b> recurring bill${x.rec===1?'':'s'}`:''}${isCat&&x.budget?`, budget <b>${sar(x.budget)}</b>`:''}${!isCat&&x.category?`<br>Usual category: <b>${esc(x.category)}</b>`:''}${x.hidden?'<br><b>Hidden</b> — not shown when adding expenses':''}</div>`;
+ if(x.protected){h+='<p class="hint" style="margin-top:12px">This is a built-in category the app falls back to. It can’t be renamed or deleted.</p>';return generic(x.name,h)}
+ h+=`<div class="act">
+  <div class="field" style="margin:0"><label>RENAME</label><div class="searchrow" style="margin:0"><input id="cRen" value="${esc(x.name)}"><button class="allm" style="color:var(--blue);border:0" onclick="doRename()">Save</button></div></div>
+  <div class="field" style="margin:0"><label>MERGE INTO ANOTHER ${kind.toUpperCase()}</label><div class="searchrow" style="margin:0">${selHtml('cMerge',others(x.name),'Choose…')}<button class="allm" style="color:var(--blue);border:0" onclick="doMerge()">Merge</button></div></div>
+  ${!isCat?`<div class="field" style="margin:0"><label>USUAL CATEGORY (FOR NEW EXPENSES)</label><div class="searchrow" style="margin:0">${selHtml('cUsual',catalog.categories.filter(c=>!c.hidden).map(c=>c.name),x.category||'Choose…')}<button class="allm" style="color:var(--blue);border:0" onclick="doUsual()">Set</button></div></div>`:''}
+  ${x.hidden?`<button class="secondary full" onclick="doUnhide()">Show in lists again</button>`:''}
+  ${used?`${x.hidden?'':`<button class="secondary full" onclick="doHide()">Hide from lists (keep on past expenses)</button>`}
+   <div class="field" style="margin:0"><label>MOVE ALL TO ANOTHER ${kind.toUpperCase()} AND DELETE</label><div class="searchrow" style="margin:0">${selHtml('cMove',others(x.name),'Choose…')}<button class="allm" style="color:var(--red);border:0" onclick="doMoveDelete()">Delete</button></div></div>`
+   :`<button class="danger-btn full" onclick="doDelete()">Delete ${kind}</button>`}
+ </div><p class="hint" style="margin-top:12px">Expenses are never deleted here — only names change.</p>`;
+ generic(x.name,h);
+}
+function impact(x){const isCat=catTab==='cat';return `${x.tx} expense${x.tx===1?'':'s'}${isCat&&x.rec?`, ${x.rec} recurring bill${x.rec===1?'':'s'}`:''}${isCat&&x.budget?' and its budget':''}`}
+async function catOp(fn,args,msg){
+ try{await api(fn,...args);store.clearCache();closeSheet('genericSheet');toast(msg);loadMeta();loadCatalog()}catch(e){toast(e.message)}
+}
+function doRename(){
+ const x=catSel,isCat=catTab==='cat',nn=$('cRen').value.trim().replace(/\s+/g,' ');if(!nn||nn===x.name)return;
+ const ex=(isCat?catalog.categories:catalog.items).find(y=>y.name.toLowerCase()===nn.toLowerCase()&&y.name!==x.name);
+ if(!confirm(ex?`“${ex.name}” already exists.\n\nMerge “${x.name}” into “${ex.name}”? This changes ${impact(x)}.`:`Rename “${x.name}” to “${nn}”?\n\nThis changes ${impact(x)}, including past ones.`))return;
+ catOp(isCat?'renameCategory':'renameItem',[x.name,nn],ex?`Merged into ${ex.name}`:`Renamed to ${nn}`);
+}
+function doMerge(){
+ const x=catSel,t=$('cMerge').value;if(!t)return toast('Choose where to merge it');
+ if(!confirm(`Merge “${x.name}” into “${t}”?\n\nThis moves ${impact(x)} to “${t}” and removes “${x.name}”.`))return;
+ catOp(catTab==='cat'?'renameCategory':'renameItem',[x.name,t],`Merged into ${t}`);
+}
+function doMoveDelete(){
+ const x=catSel,t=$('cMove').value;if(!t)return toast('Choose where to move it');
+ if(!confirm(`Move ${impact(x)} to “${t}” and delete “${x.name}”?`))return;
+ catOp(catTab==='cat'?'deleteCategory':'deleteItem',[x.name,'move',t],`Moved to ${t} · ${x.name} deleted`);
+}
+function doHide(){const x=catSel;if(!confirm(`Hide “${x.name}”?\n\nPast expenses keep it, but it won’t appear when adding new ones.`))return;catOp(catTab==='cat'?'deleteCategory':'deleteItem',[x.name,'hide'],`${x.name} hidden`)}
+function doUnhide(){const x=catSel;catOp(catTab==='cat'?'unhideCategory':'unhideItem',[x.name],`${x.name} is shown again`)}
+function doDelete(){const x=catSel;if(!confirm(`Delete “${x.name}”? It isn’t used by any expense.`))return;catOp(catTab==='cat'?'deleteCategory':'deleteItem',[x.name,'delete'],`${x.name} deleted`)}
+function doUsual(){const x=catSel,c=$('cUsual').value;if(!c)return;catOp('setItemCategory',[x.name,c],`${x.name} → usually ${c}`)}
+function catalogAdd(){
+ const isCat=catTab==='cat';
+ generic(isCat?'New category':'New item',`<div class="field"><label>NAME</label><input id="cNew" placeholder="${isCat?'e.g. Gifts':'e.g. Water bottles'}"></div>${isCat?'':`<div class="field"><label>USUAL CATEGORY</label>${selHtml('cNewCat',catalog.categories.filter(c=>!c.hidden).map(c=>c.name),'Choose…')}</div>`}<button class="primary full" onclick="doAdd()">Add</button>`);
+ setTimeout(()=>$('cNew').focus(),250);
+}
+function doAdd(){const n=$('cNew').value.trim();if(!n)return;if(catTab==='cat')catOp('addCategory',[n],`Category “${n}” added`);else catOp('addItem',[n,$('cNewCat').value],`Item “${n}” added`)}
+
 let splitCache=[];
 function goSplits(){show('splits');loadSplits()}
 function loadSplits(){
