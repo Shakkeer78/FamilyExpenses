@@ -183,6 +183,41 @@ details.more[open] summary:before{content:"－ "}
 .connect-sub{text-align:center;color:var(--muted);font-size:14px;margin:6px 10px 18px;line-height:1.5}
 code{background:#f2f4f7;padding:1px 5px;border-radius:5px;font-size:13px}
 
+/* v5.5 split payments */
+.seg.stype{margin-top:10px;display:none}
+.seg.stype.show{display:flex}
+.sprog{background:#f7f9fd;border-radius:15px;padding:13px 14px;margin:6px 0 4px}
+.sprog .top{display:flex;justify-content:space-between;gap:10px;font-size:13px;color:var(--muted);font-weight:700}
+.sprog .big{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-top:6px}
+.sprog .big b{font-size:20px;letter-spacing:-.3px}
+.sprog .big span{font-size:13px;color:var(--muted);font-weight:700;text-align:right}
+.sprog .barbg{height:9px;margin-top:9px}
+.sprog .bar{background:#12b76a}
+.sprog.inst .bar{background:var(--blue)}
+.sched{margin-top:8px;max-height:240px;overflow:auto}
+.sched div{display:grid;grid-template-columns:28px 1fr auto;gap:8px;align-items:center;padding:7px 2px;border-bottom:1px solid #f1f3f7;font-size:13.5px;font-variant-numeric:tabular-nums}
+.sched div:last-child{border:0}
+.sched i{font-style:normal;width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:900;background:#eef1f6;color:var(--faint)}
+.sched .ok i{background:#ecfdf3;color:#027a48}
+.sched .nx{font-weight:800}
+.sched .nx i{background:var(--soft);color:var(--blue)}
+.tag{display:inline-block;font-size:10.5px;font-weight:850;padding:2px 7px;border-radius:7px;letter-spacing:.2px;vertical-align:1px}
+.tag.inst{background:var(--soft);color:var(--blue)}.tag.spr{background:#ecfdf3;color:#027a48}
+.scard{background:#fff;border-radius:18px;padding:14px;margin-bottom:10px;box-shadow:var(--shadow);width:100%;border:0;text-align:left;display:block}
+.scard .h{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.scard .h b{font-size:16px}
+.scard .h span{font-weight:850;white-space:nowrap}
+.scard small{display:block;color:var(--muted);font-size:12.5px;margin-top:4px;line-height:1.45}
+.scard .barbg{height:8px;margin-top:10px}
+.scard .bar{background:#12b76a}.scard.inst .bar{background:var(--blue)}
+.sumgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.sumgrid div{background:#fff;border-radius:16px;padding:13px;box-shadow:var(--shadow)}
+.sumgrid span{display:block;font-size:11px;font-weight:850;color:var(--faint);letter-spacing:.4px}
+.sumgrid b{display:block;font-size:19px;margin-top:4px}
+.sumgrid small{display:block;font-size:12px;color:var(--muted);margin-top:2px}
+.split-line{display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid #f1f3f7;font-size:14px}
+.split-line:last-child{border:0}
+.split-line b{font-variant-numeric:tabular-nums}
 /* v5.3 */
 .monthbar{display:grid;grid-template-columns:48px 1fr 48px;gap:8px;align-items:center;margin-bottom:6px}
 .mb-arrow{height:46px;border:0;border-radius:13px;background:#fff;box-shadow:var(--shadow);font-size:24px;font-weight:700;color:var(--blue)}
@@ -363,6 +398,7 @@ input.picker{cursor:pointer;caret-color:transparent;background-image:linear-grad
    <div class="cardhead"><div><span class="eyebrow">Activity</span><h3>Recent transactions</h3></div><button class="link" onclick="go('transactions')">See all</button></div>
    <div id="homeRecent"></div>
   </div>
+  <button class="scard" id="splitHome" style="display:none;margin-top:10px;padding:16px" onclick="goSplits()"></button>
   <div class="card flat" id="billsCard" style="display:none">
    <div class="cardhead"><div><span class="eyebrow">Coming up</span><h3>Bills due soon</h3></div><button class="link" onclick="goRecurring()">All bills</button></div>
    <div id="billsList"></div>
@@ -395,6 +431,7 @@ input.picker{cursor:pointer;caret-color:transparent;background-image:linear-grad
    <div class="field"><label>SPLIT COST OVER MONTHS</label>
     <div class="stepper"><button type="button" onclick="stepSpread(-1)">−</button><input type="number" min="1" max="60" value="1" inputmode="numeric" id="espread" oninput="splitHint()"><button type="button" onclick="stepSpread(1)">＋</button></div>
     <div class="split-chips" id="splitChips"><button data-n="1" onclick="setSpread(1)">No split</button><button data-n="3" onclick="setSpread(3)">3 months</button><button data-n="6" onclick="setSpread(6)">6 months</button><button data-n="12" onclick="setSpread(12)">12 months</button></div>
+    <div class="seg stype" id="stype"><button data-t="spread" class="on" onclick="setSplitType('spread')">Paid in full now</button><button data-t="instalments" onclick="setSplitType('instalments')">Paying in instalments</button></div>
     <div class="split-hint" id="splitHint"></div>
    </div>
    <div class="twocol">
@@ -537,11 +574,19 @@ input.picker{cursor:pointer;caret-color:transparent;background-image:linear-grad
   </div>
  </section>
 
+ <!-- SPLIT PAYMENTS -->
+ <section id="splits" class="screen">
+  <div class="screenhead"><h2>Split payments</h2><button class="chip" onclick="go('more')">Back</button></div>
+  <div class="sumgrid" id="splitSum"></div>
+  <div id="splitList"></div>
+ </section>
+
  <!-- MORE -->
  <section id="more" class="screen">
   <div class="screenhead"><h2>More</h2></div>
   <div class="menu">
    <button class="menuitem" onclick="goRecurring()"><span>🔁 Recurring expenses</span><span class="chev">›</span></button>
+   <button class="menuitem" onclick="goSplits()"><span>½ Split payments</span><span class="chev">›</span></button>
    <button class="menuitem" onclick="go('analysis');setAnTab('compare')"><span>⇄ Compare months</span><span class="chev">›</span></button>
    <button class="menuitem" onclick="openBudgets()"><span>🎯 Monthly budgets</span><span class="chev">›</span></button>
    <button class="menuitem" onclick="openReports()"><span>📄 Saved reports</span><span class="chev">›</span></button>
@@ -609,7 +654,7 @@ input.picker{cursor:pointer;caret-color:transparent;background-image:linear-grad
 
 <script>
 'use strict';
-const APP_VERSION='5.4.0';
+const APP_VERSION='5.5.1';
 const $=id=>document.getElementById(id);
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const sar=n=>'SAR '+Number(n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -665,7 +710,7 @@ function errorBox(title,e,retry){
 function skeleton(n){return Array.from({length:n||3},()=>'<div class="skeleton"></div>').join('')}
 
 /* ---------- Navigation ---------- */
-const NAV_OF={recurring:'more',recurringAdd:'more',connect:''};
+const NAV_OF={recurring:'more',recurringAdd:'more',splits:'more',connect:''};
 function show(id){
  if(id!=='add'&&editingTx)resetAddForm();
  document.querySelectorAll('.screen').forEach(x=>x.classList.toggle('active',x.id===id));
@@ -686,6 +731,7 @@ function refreshCurrent(){
  else if(current==='transactions')loadTx();
  else if(current==='analysis'){if(anTab==='compare')loadCompare();else loadOverview()}
  else if(current==='recurring')loadRecurringList();
+ else if(current==='splits')loadSplits();
  else loadMeta();
 }
 function openSheet(id){$(id).classList.add('open')}
@@ -797,13 +843,21 @@ async function pickAdd(){
 /* Month split */
 function setSpread(n){$('espread').value=n;splitHint()}
 function stepSpread(d){setSpread(Math.min(60,Math.max(1,(parseInt($('espread').value,10)||1)+d)))}
+let splitType='spread';
+function setSplitType(t){splitType=t;document.querySelectorAll('#stype button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));splitHint()}
 function splitHint(){
  const n=Math.max(1,parseInt($('espread').value,10)||1),a=Number($('eamt').value)||0;
  document.querySelectorAll('#splitChips button').forEach(b=>b.classList.toggle('on',+b.dataset.n===n));
+ $('stype').classList.toggle('show',n>1);
  if(n<=1){$('splitHint').textContent='Counted in full in the month it was paid.';return}
+ if(splitType==='instalments'){
+  const d=new Date(($('edate').value||ymd(new Date()))+'T12:00:00'),e=new Date(d.getFullYear(),d.getMonth()+n-1,1),f=x=>x.toLocaleDateString('en-GB',{month:'short',year:'numeric'});
+  $('splitHint').innerHTML=`${a>0?`<b>${sar(Math.floor(a/n*100)/100)} instalment</b> each month`:'An equal instalment each month'} for ${n} months · ${f(d)} – ${f(e)}.<br>Each instalment is counted on its date, shown in “Bills due soon”, and the amount still to pay is tracked.`;
+  return;
+ }
  const d=new Date(($('edate').value||ymd(new Date()))+'T12:00:00'),e=new Date(d.getFullYear(),d.getMonth()+n-1,1);
  const f=x=>x.toLocaleDateString('en-GB',{month:'short',year:'numeric'});
- $('splitHint').innerHTML=a>0?`<b>${sar(Math.floor(a/n*100)/100)} per month</b> for ${n} months · ${f(d)} – ${f(e)}`:`Counted as an equal share each month for ${n} months · ${f(d)} – ${f(e)}`;
+ $('splitHint').innerHTML=(a>0?`<b>${sar(Math.floor(a/n*100)/100)} per month</b> for ${n} months · ${f(d)} – ${f(e)}`:`Counted as an equal share each month for ${n} months · ${f(d)} – ${f(e)}`)+'<br>Paid in full now — the cost is spread so each month carries its share.';
 }
 function loadMeta(){return cached('meta','getMeta',[],d=>applyMeta(d),()=>{})}
 
@@ -886,10 +940,17 @@ function loadExtras(){
    $('budgetEyebrow').textContent='Budgets · '+ymName(b.month);
    $('budgetList').innerHTML=(b.total?budgetRow(b.total):'')+b.rows.map(budgetRow).join('');
   }else{$('budgetCard').style.display='none';$('budgetPrompt').style.display=store.get('fe.hideBudgetPrompt')?'none':''}
+  // split payments summary
+  const sp=d.splits;
+  if(sp&&sp.active){$('splitHome').style.display='';
+   $('splitHome').innerHTML=`<div class="h"><div><span class="eyebrow">Split payments</span><b style="display:block;font-size:17px;margin-top:2px">${sp.active} ongoing</b></div><span style="color:var(--blue)">View ›</span></div>
+    ${sp.payCount?`<div class="split-line"><span>Instalments still to pay</span><b style="color:var(--blue)">${sar(sp.toPay)}</b></div>`:''}
+    ${sp.countCount?`<div class="split-line"><span>Paid in full · still to count</span><b>${sar(sp.toCount)}</b></div>`:''}`;
+  }else $('splitHome').style.display='none';
   // bills due in the next 7 days
   const bl=d.bills||[];
   $('billsCard').style.display=bl.length?'':'none';
-  $('billsList').innerHTML=bl.map(x=>`<div class="tx"><div class="txicon">🗓</div><div style="min-width:0"><div class="txname">${esc(x.name)}</div><div class="txmeta">${x.days===0?'<b style="color:#b54708">Due today</b>':x.days===1?'Due tomorrow':'Due in '+x.days+' days'} · ${esc(niceDate(x.date))}${x.parts>1?` · share ${x.part}/${x.parts} of ${sar(x.full)}`:''}</div></div><div class="txamt">${sar(x.amount)}</div></div>`).join('');
+  $('billsList').innerHTML=bl.map(x=>`<div class="tx"><div class="txicon">${x.kind==='instalment'?'½':'🗓'}</div><div style="min-width:0"><div class="txname">${esc(x.name)}</div><div class="txmeta">${x.days===0?'<b style="color:#b54708">Due today</b>':x.days===1?'Due tomorrow':'Due in '+x.days+' days'} · ${esc(niceDate(x.date))}${x.kind==='instalment'?` · instalment ${x.part}/${x.parts} of ${sar(x.full)}`:x.parts>1?` · share ${x.part}/${x.parts} of ${sar(x.full)}`:''}</div></div><div class="txamt">${sar(x.amount)}</div></div>`).join('');
  },()=>{});
 }
 async function openBudgets(){
@@ -953,7 +1014,7 @@ function setTxRange(r){txRange=r;$('txAll').checked=false;closeSheet('genericShe
 function loadTx(){
  if(!txRange)txReset();
  let rg={start:'',end:''},label='All time';
- if(txRange.k==='month'){rg=ymRange(txRange.ym);label=ymName(txRange.ym)}
+ if(txRange.k==='month'){rg=ymRange(txRange.ym);label=ymName(txRange.ym);if(rg.end>ymd(new Date()))rg.end=ymd(new Date())}
  if(txRange.k==='custom'){rg={start:txRange.a,end:txRange.b};label=niceDate(txRange.a)+' – '+niceDate(txRange.b)}
  const q=$('txSearch').value.trim(),allM=$('txAll').checked&&!!q;
  if(allM){rg={start:'',end:''}}
@@ -965,23 +1026,49 @@ function loadTx(){
  if(!store.get('fe.c.'+key)){$('txList').innerHTML=skeleton(6);$('txSum').innerHTML='&nbsp;'}
  cached(key,'getTransactionsMobile',[f],d=>{
   txCache=d||[];let last='',h='';
-  const tot=txCache.reduce((a,x)=>a+Number(x.amount||0),0);
-  $('txSum').innerHTML=`<b>${sar(tot)}</b><span>${txCache.length} expense${txCache.length===1?'':'s'}${f.category?' · '+esc(f.category):''}${q?' · “'+esc(q)+'”':''}</span>`;
+  const tot=txCache.reduce((a,x)=>a+Number(x.share!=null?x.share:x.amount||0),0);
+  $('txSum').innerHTML=`<b>${sar(tot)}</b><span>${txCache.length} expense${txCache.length===1?'':'s'}${f.category?' · '+esc(f.category):''}${q?' · “'+esc(q)+'”':''}<br><small style="font-size:11px">${f.start||f.end?'Split expenses: this month’s share only · ':''}recurring bills not included</small></span>`;
   txCache.forEach((x,i)=>{
-   if(x.date!==last){h+=`<div class="txday">${esc(niceDate(x.date))}</div>`;last=x.date}
-   h+=`<button class="tx" onclick="openTx('tx',${i})"><div class="txicon">${iconFor(x.category)}</div><div style="min-width:0"><div class="txname">${esc(x.description||x.category)}</div><div class="txmeta">${esc(x.category)}${x.paidBy?' · '+esc(x.paidBy):''}${x.spread>1?' · split '+x.spread+' mo.':''}</div></div><div class="txamt">${sar(x.amount)}</div></button>`;
+   const day=x.rowDate||x.date;
+   if(day!==last){h+=`<div class="txday">${esc(niceDate(day))}</div>`;last=day}
+   const isPart=x.parts>1&&(f.start||f.end),amt=isPart?x.share:x.amount;
+   const info=isPart?(x.part===1&&day===x.date?` · ${sar(x.share)} this month (of ${sar(x.amount)}) · ${x.splitType==='instalments'?'instalment':'split'} 1/${x.parts}`:` · ${x.splitType==='instalments'?'instalment':'share'} ${x.part}/${x.parts} of ${sar(x.amount)}`):splitShort(x);
+   h+=`<button class="tx" onclick="openTx('tx',${i})"><div class="txicon">${isPart&&x.part>1?'½':iconFor(x.category)}</div><div style="min-width:0"><div class="txname">${esc(x.description||x.category)}</div><div class="txmeta">${esc(x.category)}${x.paidBy?' · '+esc(x.paidBy):''}${esc(info)}</div></div><div class="txamt">${sar(amt)}</div></button>`;
   });
   $('txList').innerHTML=h||`<div class="empty">No expenses${q?' match “'+esc(q)+'”':''} in ${esc(allM?'any month':label)}.${q&&!allM?'<br>Tick “All months” to search everything.':''}</div>`;
  },e=>{$('txList').innerHTML=errorBox('Transactions could not load.',e,'loadTx()')});
 }
+function addMonthsClamp(iso,n){const y=+iso.slice(0,4),m=+iso.slice(5,7)-1+n,d=+iso.slice(8,10);const last=new Date(y,m+1,0).getDate();return ymd(new Date(y,m,Math.min(d,last)))}
+function splitPlan(x){
+ const n=Math.max(1,x.spread||1),full=Number(x.amount)||0,each=Math.floor(full/n*100)/100,today=ymd(new Date()),sch=[];let used=0;
+ for(let i=0;i<n;i++){const v=i===n-1?Math.round((full-used)*100)/100:each;used+=v;const d=addMonthsClamp(x.date,i);sch.push({part:i+1,date:d,amount:v,done:d<=today})}
+ const done=sch.filter(p=>p.done),left=sch.filter(p=>!p.done),sum=a=>Math.round(a.reduce((t,p)=>t+p.amount,0)*100)/100;
+ return{inst:x.splitType==='instalments',n,sch,doneCount:done.length,doneAmt:sum(done),leftCount:left.length,left:sum(left),next:left[0]||null,end:sch[n-1].date,finished:!left.length};
+}
+function splitShort(x){
+ if(!(x.spread>1))return'';const p=splitPlan(x);
+ if(p.finished)return ` · ${p.inst?'instalments':'split'} ${p.n}/${p.n} ✓`;
+ return ` · ${p.inst?'instalment':'split'} ${p.doneCount}/${p.n} · ${sar(p.left)} ${p.inst?'to pay':'to count'}`;
+}
+function splitBlock(x){
+ if(!(x.spread>1))return'';const p=splitPlan(x),mf=d=>new Date(d+'T12:00:00').toLocaleDateString('en-GB',{month:'short',year:'numeric'});
+ const pct=Math.round(p.doneAmt/(Number(x.amount)||1)*100);
+ return `<div class="sprog${p.inst?' inst':''}">
+  <div class="top"><span><span class="tag ${p.inst?'inst':'spr'}">${p.inst?'INSTALMENTS':'PAID IN FULL · SPREAD'}</span></span><span>${p.doneCount} of ${p.n} months</span></div>
+  <div class="big"><div><span style="display:block;font-size:12px;color:var(--muted);font-weight:700">${p.inst?'Paid so far':'Counted so far'}</span><b>${sar(p.doneAmt)}</b></div><div style="text-align:right"><span style="display:block;font-size:12px">${p.finished?'Completed':p.inst?'Still to pay':'Still to count'}</span><b style="color:${p.finished?'#027a48':p.inst?'var(--blue)':'var(--ink)'}">${p.finished?'✓':sar(p.left)}</b></div></div>
+  <div class="barbg"><div class="bar" style="width:${Math.max(2,pct)}%"></div></div>
+  <div class="top" style="margin-top:7px;font-weight:650"><span>${pct}% · ${mf(p.sch[0].date)} – ${mf(p.end)}</span><span>${p.next?(p.inst?'Next: ':'Next share: ')+sar(p.next.amount)+' on '+niceDate(p.next.date):''}</span></div>
+  <div class="sched">${p.sch.map(q=>`<div class="${q.done?'ok':q===p.next?'nx':''}"><i>${q.done?'✓':q.part}</i><span>${mf(q.date)} · ${niceDate(q.date)}</span><b>${sar(q.amount)}</b></div>`).join('')}</div>
+ </div>`;
+}
 function openTx(src,i){
- const x=(src==='home'?homeRecentCache:src==='big'?largestCache:txCache)[i];if(!x)return;
+ const x=(src==='home'?homeRecentCache:src==='big'?largestCache:src==='split'?splitCache:txCache)[i];if(!x)return;
  window._openTx=x;
  const row=(k,v)=>v?`<div class="detail-row"><span>${k}</span><b>${esc(v)}</b></div>`:'';
  generic(x.description||x.category||'Expense',
   `<div class="detail-amt">${sar(x.amount)}</div>`+
   row('Date',niceDate(x.date)+' ('+x.date+')')+row('Category',x.category)+row('Paid by',x.paidBy)+row('Payment method',x.method)+
-  row('Split over',x.spread>1?`${x.spread} months · ${sar(Math.floor(x.amount/x.spread*100)/100)}/month`:'')+row('Notes',x.notes)+
+  splitBlock(x)+row('Notes',x.notes)+
   `<div class="btnrow"><button class="secondary" onclick="closeSheet('genericSheet');openEdit(window._openTx)">✎ Edit</button><button class="danger-btn" onclick="deleteTx(window._openTx)">Delete</button></div>
    <button class="link full" style="margin-top:10px;padding:10px" onclick="closeSheet('genericSheet')">Close</button>`);
 }
@@ -1017,8 +1104,9 @@ function addMultiRow(focus){
  d.innerHTML=`<div class="mrow-head"><b></b><button class="rm" onclick="removeMultiRow('${id}')">Remove</button></div>
   <div class="twocol"><div class="field"><label>AMOUNT</label><input type="number" step="0.01" min="0" inputmode="decimal" class="m-amt" placeholder="0.00" oninput="updMulti()"></div>
   <div class="field"><label>CATEGORY</label><input class="m-cat picker" data-kind="cat" readonly placeholder="Choose" onclick="openPick(this)"></div></div>
-  <div class="mgrid"><div class="field" style="margin-bottom:0"><label>ITEM</label><input class="m-desc picker" data-kind="item" readonly placeholder="Choose or add" onclick="openPick(this)"></div>
-  <div class="field" style="margin-bottom:0"><label>MONTHS</label><input type="number" min="1" max="60" value="1" inputmode="numeric" class="m-spread" title="Split cost over this many months"></div></div>`;
+  <div class="field"><label>ITEM</label><input class="m-desc picker" data-kind="item" readonly placeholder="Choose or add" onclick="openPick(this)"></div>
+  <div class="twocol"><div class="field" style="margin-bottom:0"><label>SPLIT OVER MONTHS</label><input type="number" min="1" max="60" value="1" inputmode="numeric" class="m-spread" oninput="this.closest('.mrow').querySelector('.m-type').disabled=(+this.value||1)<=1"></div>
+  <div class="field" style="margin-bottom:0"><label>IF SPLIT</label><select class="m-type" disabled><option value="spread">Paid in full now</option><option value="instalments">Instalments</option></select></div></div>`;
  $('multiRows').appendChild(d);
  setPick(d.querySelector('.m-cat'),store.get('fe.lastCat',''));
  updMulti();
@@ -1041,7 +1129,7 @@ async function saveMulti(){
   const a=r.querySelector('.m-amt').value,d=r.querySelector('.m-desc').value.trim(),c=r.querySelector('.m-cat').value,sp=Math.max(1,parseInt(r.querySelector('.m-spread').value,10)||1);
   if(!a&&!d)return;
   if(!(Number(a)>0)){bad=bad||i+1;return}
-  items.push({amount:a,description:d,category:c,spreadMonths:sp});
+  items.push({amount:a,description:d,category:c,spreadMonths:sp,splitType:sp>1?r.querySelector('.m-type').value:''});
  });
  if(bad)return msg.textContent='Item '+bad+' needs an amount greater than zero.';
  if(!items.length)return msg.textContent='Enter at least one amount.';
@@ -1057,7 +1145,7 @@ async function saveMulti(){
   store.set('fe.lastPaid',common.paidBy);store.set('fe.lastMethod',common.paymentMethod);
   store.clearCache();
   $('multiRows').innerHTML='';addMultiRow();addMultiRow();
-  budgetToast(r.budgetAlerts,`Saved ${r.count} expenses · ${sar(r.total)}`);
+  budgetToast(r.budgetAlerts,`Saved ${r.count} expense${r.count===1?'':'s'} · ${sar(r.total)}`);
   loadMeta();go('home');
  }catch(e){msg.textContent=e.message}
  finally{b.disabled=false;b.textContent='Save all'}
@@ -1070,7 +1158,7 @@ function budgetToast(alerts,base){
 function dupMessage(list){return list.map(d=>`• ${d.item?'Item '+d.item+': ':''}${d.description||d.category} ${sar(d.amount)} on ${niceDate(d.date)}${d.paidBy?' (paid by '+d.paidBy+')':''}`).join('\n')}
 async function saveExpense(){
  if(editingTx&&!$('ecat').value){$('saveMsg').className='msg err';$('saveMsg').textContent='Choose a category.';return}
- const o={date:$('edate').value,description:$('edesc').value.trim(),category:$('ecat').value||'Other',amount:$('eamt').value,paidBy:$('epaid').value.trim(),paymentMethod:$('emethod').value.trim(),spreadMonths:$('espread').value||1,notes:$('enotes').value.trim()};
+ const o={date:$('edate').value,description:$('edesc').value.trim(),category:$('ecat').value||'Other',amount:$('eamt').value,paidBy:$('epaid').value.trim(),paymentMethod:$('emethod').value.trim(),spreadMonths:$('espread').value||1,splitType:(+$('espread').value>1?splitType:''),notes:$('enotes').value.trim()};
  const msg=$('saveMsg');msg.className='msg';
  if(!(Number(o.amount)>0)){msg.className='msg err';msg.textContent='Enter an amount greater than zero.';return $('eamt').focus()}
  if(!o.date){msg.className='msg err';msg.textContent='Choose a date.';return}
@@ -1104,7 +1192,7 @@ function openEdit(x){
  $('eamt').value=x.amount;$('edesc').value=x.description||'';
  setPick($('ecat'),!x.category||x.category==='Uncategorised'?'':x.category);
  $('edate').value=x.date;$('epaid').value=x.paidBy||'';$('emethod').value=x.method||'';
- $('espread').value=x.spread||1;$('enotes').value=x.notes||'';
+ $('espread').value=x.spread||1;$('enotes').value=x.notes||'';setSplitType(x.splitType==='instalments'?'instalments':'spread');
  $('emore').open=!!(x.method||x.notes);splitHint();
  $('saveMsg').textContent='';
 }
@@ -1112,7 +1200,7 @@ function resetAddForm(){
  editingTx=null;$('add').classList.remove('editing');
  $('addTitle').textContent='Add expense';$('addCancel').style.display='none';
  $('saveBtn').textContent='Save expense';$('delBtn').style.display='none';
- ['eamt','edesc','enotes'].forEach(id=>$(id).value='');$('espread').value=1;$('edate').value=ymd(new Date());
+ ['eamt','edesc','enotes'].forEach(id=>$(id).value='');$('espread').value=1;splitType='spread';document.querySelectorAll('#stype button').forEach(b=>b.classList.toggle('on',b.dataset.t==='spread'));$('edate').value=ymd(new Date());
  $('epaid').value=store.get('fe.lastPaid','');$('emethod').value=store.get('fe.lastMethod','');
  setPick($('ecat'),store.get('fe.lastCat',''));$('saveMsg').textContent='';$('emore').open=false;splitHint();
 }
@@ -1289,6 +1377,23 @@ function runCustom(){
 }
 
 /* ---------- Recurring ---------- */
+let splitCache=[];
+function goSplits(){show('splits');loadSplits()}
+function loadSplits(){
+ if(!store.get('fe.c.splits'))$('splitList').innerHTML=skeleton(4);
+ cached('splits','getSplits',[],d=>{
+  const s=d.summary;
+  $('splitSum').innerHTML=`<div><span>STILL TO PAY</span><b style="color:var(--blue)">${sar(s.toPay)}</b><small>${s.payCount} instalment plan${s.payCount===1?'':'s'}</small></div><div><span>STILL TO COUNT</span><b>${sar(s.toCount)}</b><small>${s.countCount} paid in full, spread</small></div>`;
+  splitCache=(d.items||[]).map(r=>({id:r.id,date:r.date,description:r.description,category:r.category,amount:r.amount,paidBy:r.paidBy,method:r.method,notes:r.notes,spread:r.parts,splitType:r.type}));
+  const card=(x,i)=>{const p=splitPlan(x),pct=Math.round(p.doneAmt/(x.amount||1)*100);
+   return `<button class="scard${p.inst?' inst':''}" onclick="openTx('split',${i})"><div class="h"><b>${esc(x.description||x.category)}</b><span>${sar(x.amount)}</span></div>
+    <small><span class="tag ${p.inst?'inst':'spr'}">${p.inst?'INSTALMENTS':'SPREAD'}</span> ${p.doneCount}/${p.n} months · ${p.finished?'completed':`<b style="color:${p.inst?'var(--blue)':'var(--ink)'}">${sar(p.left)}</b> ${p.inst?'still to pay':'still to count'}`}${p.next?` · next ${sar(p.next.amount)} on ${esc(niceDate(p.next.date))}`:''}</small>
+    <div class="barbg"><div class="bar" style="width:${Math.max(2,pct)}%"></div></div></button>`};
+  const act=splitCache.map((x,i)=>[x,i]).filter(([x])=>!splitPlan(x).finished),fin=splitCache.map((x,i)=>[x,i]).filter(([x])=>splitPlan(x).finished);
+  $('splitList').innerHTML=(act.length?act.map(([x,i])=>card(x,i)).join(''):'<div class="empty">No ongoing split payments.<br>When adding an expense, set “Split cost over months” above 1.</div>')+
+   (fin.length?`<details class="more" style="margin-top:14px"><summary>Completed (${fin.length})</summary>${fin.map(([x,i])=>card(x,i)).join('')}</details>`:'');
+ },e=>{$('splitList').innerHTML=errorBox('Split payments could not load.',e,'loadSplits()')});
+}
 function goRecurring(){show('recurring');loadRecurringList()}
 function loadRecurringList(){
  if(!store.get('fe.c.recur_all'))$('recurringList').innerHTML=skeleton(4);
