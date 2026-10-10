@@ -183,6 +183,34 @@ details.more[open] summary:before{content:"－ "}
 .connect-sub{text-align:center;color:var(--muted);font-size:14px;margin:6px 10px 18px;line-height:1.5}
 code{background:#f2f4f7;padding:1px 5px;border-radius:5px;font-size:13px}
 
+/* v5.7 reports */
+input[type=checkbox]{-webkit-appearance:checkbox;appearance:auto;width:22px;height:22px;padding:0;margin:0;border:0;box-shadow:none;accent-color:var(--blue);flex:none}
+.rtype{width:100%;border:0;background:#fff;text-align:left;padding:11px 4px;border-bottom:1px solid #f1f3f7;display:grid;grid-template-columns:26px 1fr;gap:8px;align-items:start}
+.rtype:last-child{border:0}
+.rtype i{font-style:normal;width:20px;height:20px;border-radius:50%;border:2px solid #cfd6e2;margin-top:1px}
+.rtype.on i{border:6px solid var(--blue)}
+.rtype b{display:block;font-size:15px}
+.rtype small{display:block;color:var(--muted);font-size:12.5px;margin-top:2px;line-height:1.4}
+.frow{width:100%;border:0;background:#fff;display:flex;justify-content:space-between;align-items:center;gap:10px;padding:13px 2px;border-bottom:1px solid #f1f3f7;font-size:15px;font-weight:700;text-align:left}
+.frow span:last-child{color:var(--blue);font-weight:750;font-size:14px;text-align:right;max-width:60%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.btn3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:9px}
+.btn3 button{min-height:46px;border:0;border-radius:13px;background:#edf2ff;color:var(--blue);font-weight:800;font-size:14px}
+.mchk{display:flex;align-items:center;gap:12px;padding:12px 4px;border-bottom:1px solid #f1f3f7;font-size:15px;font-weight:650}
+.mchk input{width:20px;height:20px;margin:0;flex:none}
+.rpview{position:fixed;inset:0;z-index:150;background:#fff;display:none;flex-direction:column}
+.rpview.open{display:flex}
+.rpbar{display:flex;align-items:center;gap:8px;padding:calc(8px + var(--st)) 10px 8px;border-bottom:1px solid var(--line);background:#fff}
+.rpbar b{flex:1;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rpbar button{border:0;border-radius:11px;background:#edf2ff;color:var(--blue);font-weight:800;padding:9px 12px;font-size:13px}
+.rpview iframe{flex:1;border:0;width:100%}
+.sr{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:11px 0;border-bottom:1px solid #f1f3f7}
+.sr:last-child{border:0}
+.sr b{display:block;font-size:15px}.sr small{display:block;color:var(--muted);font-size:12px;margin-top:2px}
+.sr .acts{display:flex;gap:6px;flex:none}
+.sr .acts button{border:0;border-radius:10px;padding:8px 11px;font-weight:800;font-size:13px;background:#edf2ff;color:var(--blue)}
+.sr .acts .del{background:var(--red-bg);color:var(--red)}
+.switch{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 2px 12px;font-weight:700;font-size:15px}
+.switch input{width:22px;height:22px}
 /* v5.6 catalog */
 .crow{width:100%;border:0;background:#fff;border-radius:15px;padding:13px 14px;margin-bottom:8px;box-shadow:0 3px 14px rgba(16,24,40,.045);display:flex;justify-content:space-between;align-items:center;gap:10px;text-align:left}
 .crow b{font-size:15.5px;display:block}
@@ -583,6 +611,51 @@ input.picker{cursor:pointer;caret-color:transparent;background-image:linear-grad
   </div>
  </section>
 
+ <!-- REPORTS -->
+ <section id="reports" class="screen">
+  <div class="screenhead"><h2>Reports</h2><button class="chip" onclick="go('more')">Back</button></div>
+  <div class="card" style="margin-top:0">
+   <div class="cardhead"><div><span class="eyebrow">Step 1</span><h3>Period</h3></div></div>
+   <div class="chips" id="rpChips" style="margin-bottom:4px">
+    <button data-k="this" onclick="rpSetPeriod('this')">This month</button><button data-k="last" onclick="rpSetPeriod('last')">Last month</button>
+    <button data-k="month" onclick="rpSetPeriod('month')">Month…</button><button data-k="quarter" onclick="rpSetPeriod('quarter')">Quarter…</button>
+    <button data-k="year" onclick="rpSetPeriod('year')">Year…</button><button data-k="custom" onclick="rpSetPeriod('custom')">Custom…</button><button data-k="all" onclick="rpSetPeriod('all')">All time</button>
+   </div>
+   <div id="rpPeriodOpts"></div>
+  </div>
+  <div class="card">
+   <div class="cardhead"><div><span class="eyebrow">Step 2</span><h3>Report</h3></div></div>
+   <div id="rpTypes"></div>
+  </div>
+  <div class="card">
+   <div class="cardhead"><div><span class="eyebrow">Step 3 · optional</span><h3>Filters</h3></div><button class="link" onclick="rpClearFilters()">Clear</button></div>
+   <button class="frow" onclick="openMulti('categories')"><span>Categories</span><span id="rfCategories">All</span></button>
+   <button class="frow" onclick="openMulti('items')"><span>Items</span><span id="rfItems">All</span></button>
+   <button class="frow" onclick="openMulti('paidBy')"><span>Paid by</span><span id="rfPaidBy">All</span></button>
+   <button class="frow" onclick="openMulti('methods')"><span>Payment method</span><span id="rfMethods">All</span></button>
+   <label class="switch" style="padding-top:12px"><span>Include recurring bills</span><input type="checkbox" id="rpRec" checked onchange="rp.filters.includeRecurring=this.checked"></label>
+  </div>
+  <div class="card">
+   <button class="primary full" onclick="rpPreview()">👁 Preview report</button>
+   <div class="btn3"><button onclick="rpExport('pdf')">PDF</button><button onclick="rpExport('xlsx')">Excel</button><button onclick="rpCsv()">CSV</button></div>
+   <button class="secondary full" style="margin-top:9px" onclick="rpSave()">☆ Save this report</button>
+   <div class="msg" id="rpMsg"></div>
+  </div>
+  <div class="card">
+   <div class="cardhead"><div><span class="eyebrow">One tap</span><h3>Saved reports</h3></div></div>
+   <div id="rpSaved"></div>
+  </div>
+  <div class="card">
+   <div class="cardhead"><div><span class="eyebrow">Automatic</span><h3>Monthly email</h3></div></div>
+   <p class="hint" style="margin:-4px 0 10px">On the 1st of every month, last month's report is emailed as a PDF.</p>
+   <div class="field"><label>SEND TO (SEPARATE WITH COMMAS)</label><input id="emTo" type="email" multiple autocapitalize="off" placeholder="you@gmail.com, wife@gmail.com"></div>
+   <div class="field"><label>REPORT</label><select id="emType"></select></div>
+   <label class="switch"><span>Send every month</span><input type="checkbox" id="emOn"></label>
+   <div class="stack"><button class="primary full" id="emSave" onclick="emSave()">Save email settings</button><button class="secondary full" id="emTest" onclick="emTest()">Send a test email now</button></div>
+   <div class="msg" id="emMsg"></div>
+  </div>
+ </section>
+
  <!-- CATEGORIES & ITEMS -->
  <section id="catalog" class="screen">
   <div class="screenhead"><h2>Categories &amp; items</h2><button class="chip" onclick="go('more')">Back</button></div>
@@ -607,7 +680,7 @@ input.picker{cursor:pointer;caret-color:transparent;background-image:linear-grad
    <button class="menuitem" onclick="goSplits()"><span>½ Split payments</span><span class="chev">›</span></button>
    <button class="menuitem" onclick="go('analysis');setAnTab('compare')"><span>⇄ Compare months</span><span class="chev">›</span></button>
    <button class="menuitem" onclick="openBudgets()"><span>🎯 Monthly budgets</span><span class="chev">›</span></button>
-   <button class="menuitem" onclick="openReports()"><span>📄 Saved reports</span><span class="chev">›</span></button>
+   <button class="menuitem" onclick="goReports()"><span>📄 Reports &amp; export</span><span class="chev">›</span></button>
    <button class="menuitem" onclick="goCatalog()"><span>🏷 Categories &amp; items</span><span class="chev">›</span></button>
    <button class="menuitem" onclick="openImport()"><span>⬆ Import CSV</span><span class="chev">›</span></button>
    <button class="menuitem" onclick="openIssues()"><span>🩺 Check data</span><span class="chev">›</span></button>
@@ -668,11 +741,12 @@ input.picker{cursor:pointer;caret-color:transparent;background-image:linear-grad
 
 <div class="sheetback" id="genericSheet" onclick="backdrop(event,this)"><div class="sheet" id="genericContent"></div></div>
 
+<div class="rpview" id="rpView"><div class="rpbar"><button onclick="rpClose()">✕</button><b id="rpTitle">Report</b><button onclick="rpExport('pdf')">PDF</button><button onclick="rpExport('xlsx')">Excel</button></div><iframe id="rpFrame" title="Report preview"></iframe></div>
 <div class="toast" id="toast"><span id="toastMsg"></span><button id="toastBtn"></button></div>
 
 <script>
 'use strict';
-const APP_VERSION='5.6.0';
+const APP_VERSION='5.7.0';
 const $=id=>document.getElementById(id);
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const sar=n=>'SAR '+Number(n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -728,7 +802,7 @@ function errorBox(title,e,retry){
 function skeleton(n){return Array.from({length:n||3},()=>'<div class="skeleton"></div>').join('')}
 
 /* ---------- Navigation ---------- */
-const NAV_OF={recurring:'more',recurringAdd:'more',splits:'more',catalog:'more',connect:''};
+const NAV_OF={recurring:'more',recurringAdd:'more',splits:'more',catalog:'more',reports:'more',connect:''};
 function show(id){
  if(id!=='add'&&editingTx)resetAddForm();
  document.querySelectorAll('.screen').forEach(x=>x.classList.toggle('active',x.id===id));
@@ -751,6 +825,7 @@ function refreshCurrent(){
  else if(current==='recurring')loadRecurringList();
  else if(current==='splits')loadSplits();
  else if(current==='catalog')loadCatalog();
+ else if(current==='reports')loadReportsScreen();
  else loadMeta();
 }
 function openSheet(id){$(id).classList.add('open')}
@@ -1396,6 +1471,125 @@ function runCustom(){
 }
 
 /* ---------- Recurring ---------- */
+/* ---------- Reports ---------- */
+const RTYPES=[['statement','Monthly statement','Total, change vs previous period, budgets, categories and every entry'],
+ ['category','Category report','Each category: total, share, monthly amounts and its items'],
+ ['monthly','Month-by-month','Table of months × categories with totals and averages'],
+ ['items','Item report','Top items: how often, average and total'],
+ ['budget','Budget report','Budget vs actual per category for each month'],
+ ['bills','Bills & recurring','Recurring charges in the period and what’s coming next'],
+ ['splits','Split payments','Paid / counted so far and remaining for each split'],
+ ['people','Who paid & payment method','Totals per person and per payment method'],
+ ['year','Year summary','Month overview, top categories, largest payments'],
+ ['full','Full report','All of the above in one document']];
+let rp={period:{k:'this'},type:'statement',filters:{categories:[],items:[],paidBy:[],methods:[],includeRecurring:true}},rpLast=null;
+function goReports(){show('reports');loadReportsScreen()}
+function loadReportsScreen(){rpRender();rpLoadSaved();emLoad()}
+function rpRender(){
+ document.querySelectorAll('#rpChips button').forEach(b=>b.classList.toggle('on',b.dataset.k===rp.period.k));
+ const p=rp.period,yNow=new Date().getFullYear();let h='';
+ if(p.k==='month'){let o='';for(let i=0;i<36;i++){const ym=ymShift(curYm(),-i);o+=`<option value="${ym}"${ym===p.ym?' selected':''}>${ymName(ym)}</option>`}h=`<div class="field" style="margin:6px 0 0"><select onchange="rp.period.ym=this.value">${o}</select></div>`}
+ if(p.k==='quarter'){let o='';const cq=Math.floor(new Date().getMonth()/3)+1;for(let i=0;i<12;i++){let q=cq-i,y=yNow;while(q<=0){q+=4;y--}o+=`<option value="${y}-${q}"${p.y==y&&p.q==q?' selected':''}>Q${q} ${y} (${MON[(q-1)*3]}–${MON[(q-1)*3+2]})</option>`}h=`<div class="field" style="margin:6px 0 0"><select onchange="const v=this.value.split('-');rp.period.y=+v[0];rp.period.q=+v[1]">${o}</select></div>`}
+ if(p.k==='year'){let o='';for(let i=0;i<6;i++)o+=`<option${p.y==yNow-i?' selected':''}>${yNow-i}</option>`;h=`<div class="field" style="margin:6px 0 0"><select onchange="rp.period.y=+this.value">${o}</select></div>`}
+ if(p.k==='custom')h=`<div class="twocol" style="margin-top:6px"><div class="field" style="margin:0"><label>FROM</label><input type="date" value="${p.a||''}" onchange="rp.period.a=this.value"></div><div class="field" style="margin:0"><label>TO</label><input type="date" value="${p.b||''}" onchange="rp.period.b=this.value"></div></div>`;
+ $('rpPeriodOpts').innerHTML=h;
+ $('rpTypes').innerHTML=RTYPES.map(t=>`<button class="rtype${rp.type===t[0]?' on':''}" onclick="rp.type='${t[0]}';rpRender()"><i></i><span><b>${t[1]}</b><small>${t[2]}</small></span></button>`).join('');
+ const lbl=a=>!a||!a.length?'All':a.length<=2?a.join(', '):a.length+' selected';
+ $('rfCategories').textContent=lbl(rp.filters.categories);$('rfItems').textContent=lbl(rp.filters.items);$('rfPaidBy').textContent=lbl(rp.filters.paidBy);$('rfMethods').textContent=lbl(rp.filters.methods);
+ $('rpRec').checked=rp.filters.includeRecurring!==false;
+}
+function rpSetPeriod(k){
+ const p={k};if(k==='month')p.ym=ymShift(curYm(),-1);if(k==='quarter'){p.y=new Date().getFullYear();p.q=Math.floor(new Date().getMonth()/3)+1}if(k==='year')p.y=new Date().getFullYear();
+ if(k==='custom'){p.a=ymRange(curYm()).start;p.b=ymd(new Date())}
+ rp.period=p;rpRender();
+}
+function rpClearFilters(){rp.filters={categories:[],items:[],paidBy:[],methods:[],includeRecurring:true};rpRender()}
+let multiKind='',multiSel=[];
+function multiOptions(k){
+ if(k==='categories')return catOptions().filter(c=>c!=='Uncategorised');
+ if(k==='items')return itemOptions().map(x=>x.name);
+ if(k==='paidBy')return [...new Set((meta.paidBy||[]).concat(['Not set']))];
+ return [...new Set((meta.methods||[]).concat(['Not set']))];
+}
+function openMulti(k){
+ multiKind=k;multiSel=(rp.filters[k]||[]).slice();
+ const t={categories:'Categories',items:'Items',paidBy:'Paid by',methods:'Payment method'}[k];
+ generic(t,`<p class="hint" style="margin-top:-6px">Tick what to include. Nothing ticked = all.</p><input type="search" id="mSearch" placeholder="Search…" oninput="renderMulti()" style="margin-bottom:6px"><div id="mList" style="max-height:48vh;overflow:auto"></div><div class="btnrow"><button class="secondary" onclick="multiSel=[];renderMulti()">Clear</button><button class="primary" onclick="rp.filters[multiKind]=multiSel.slice();closeSheet('genericSheet');rpRender()">Done</button></div>`);
+ renderMulti();
+}
+function renderMulti(){
+ const q=($('mSearch').value||'').toLowerCase(),opts=multiOptions(multiKind).filter(o=>!q||o.toLowerCase().includes(q));
+ $('mList').innerHTML=opts.map(o=>`<label class="mchk"><input type="checkbox" ${multiSel.includes(o)?'checked':''} onchange="const v=${esc(JSON.stringify(o))};if(this.checked){if(!multiSel.includes(v))multiSel.push(v)}else multiSel=multiSel.filter(x=>x!==v)">${esc(o)}</label>`).join('')||'<div class="empty">Nothing found.</div>';
+}
+function rpSpec(){
+ if(rp.period.k==='custom'&&(!rp.period.a||!rp.period.b||rp.period.a>rp.period.b))throw new Error('Choose valid From and To dates.');
+ return JSON.parse(JSON.stringify({period:rp.period,type:rp.type,filters:rp.filters}));
+}
+function friendlyErr(e){const m=e&&e.message||String(e);return /permission|authori[sz]/i.test(m)?'One-time setup needed: open Apps Script, choose authorizeReports in the function list and click Run. Then try again.':m}
+async function rpPreview(){
+ const msg=$('rpMsg');msg.className='msg';let spec;try{spec=rpSpec()}catch(e){msg.className='msg err';return msg.textContent=e.message}
+ msg.textContent='Preparing report…';
+ try{
+  const r=await api('getReport',spec);rpLast=r;msg.textContent='';
+  $('rpTitle').textContent=r.title+' · '+r.period.label;$('rpFrame').srcdoc=r.html;$('rpView').classList.add('open');
+ }catch(e){msg.className='msg err';msg.textContent=friendlyErr(e)}
+}
+function rpClose(){$('rpView').classList.remove('open')}
+function b64Blob(b64,mime){const bin=atob(b64),u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);return new Blob([u],{type:mime})}
+function deliverFile(blob,name,url){
+ window._dl={blob,name};
+ const file=typeof File!=='undefined'?new File([blob],name,{type:blob.type}):null,canShare=file&&navigator.canShare&&navigator.canShare({files:[file]});
+ generic('Your file is ready',`<p class="hint" style="margin-top:-6px">${esc(name)}</p><div class="stack">${canShare?'<button class="primary full" onclick="shareDl()">Share (WhatsApp, email…)</button>':''}<button class="${canShare?'secondary':'primary'} full" onclick="saveDl()">Download to phone</button>${url?`<a class="secondary full" style="display:flex;align-items:center;justify-content:center;text-decoration:none" href="${esc(url)}" target="_blank" rel="noopener">Open in Google Drive</a>`:''}</div>`);
+}
+async function shareDl(){const d=window._dl;try{await navigator.share({files:[new File([d.blob],d.name,{type:d.blob.type})],title:d.name})}catch(e){if(e.name!=='AbortError')toast('Sharing failed — use Download')}}
+function saveDl(){const d=window._dl,a=document.createElement('a'),u=URL.createObjectURL(d.blob);a.href=u;a.download=d.name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(u);a.remove()},4000)}
+async function rpExport(fmt){
+ const msg=$('rpMsg');msg.className='msg';let spec;try{spec=rpSpec()}catch(e){msg.className='msg err';return msg.textContent=e.message}
+ toast(fmt==='pdf'?'Creating PDF…':'Creating Excel file…',null,null,9000);msg.textContent=fmt==='pdf'?'Creating PDF…':'Creating Excel file…';
+ try{const r=await api('exportReport',spec,fmt);msg.textContent='';$('toast').classList.remove('show');deliverFile(b64Blob(r.base64,r.mime),r.name,r.url)}
+ catch(e){msg.className='msg err';msg.textContent=friendlyErr(e);$('toast').classList.remove('show')}
+}
+async function rpCsv(){
+ const msg=$('rpMsg');msg.className='msg';let spec;try{spec=rpSpec()}catch(e){msg.className='msg err';return msg.textContent=e.message}
+ msg.textContent='Preparing CSV…';
+ try{const r=await api('getReport',spec);msg.textContent='';deliverFile(new Blob(['﻿'+r.csv],{type:'text/csv'}),r.fileName+'.csv','')}
+ catch(e){msg.className='msg err';msg.textContent=friendlyErr(e)}
+}
+let rpSavedList=[];
+function rpSpecTxt(sp){const p=sp.period||{},t=(RTYPES.find(x=>x[0]===sp.type)||[,'Report'])[1];
+ const pt={this:'This month',last:'Last month',all:'All time'}[p.k]||(p.k==='month'?ymName(p.ym||curYm()):p.k==='quarter'?`Q${p.q} ${p.y}`:p.k==='year'?'Year '+p.y:p.k==='custom'?`${p.a} – ${p.b}`:'');
+ const f=sp.filters||{},fl=[].concat(f.categories||[],f.items||[],f.paidBy||[],f.methods||[]);
+ return t+' · '+pt+(fl.length?' · '+fl.slice(0,3).join(', ')+(fl.length>3?'…':''):'');}
+async function rpLoadSaved(){
+ try{const d=await api('getReports');rpSavedList=d.filter(x=>x.spec);
+  $('rpSaved').innerHTML=rpSavedList.map((x,i)=>`<div class="sr"><div style="min-width:0"><b>${esc(x.name)}</b><small>${esc(rpSpecTxt(x.spec))}</small></div><div class="acts"><button onclick="rpRunSaved(${i})">Run</button><button class="del" onclick="rpDelSaved(${i})">✕</button></div></div>`).join('')||'<div class="empty" style="padding:12px">No saved reports yet. Set up a report above and tap “Save this report”.</div>';
+ }catch(e){$('rpSaved').innerHTML=errorBox('Could not load.',e,'rpLoadSaved()')}
+}
+function rpRunSaved(i){const x=rpSavedList[i];if(!x)return;rp=JSON.parse(JSON.stringify(x.spec));rp.filters=Object.assign({categories:[],items:[],paidBy:[],methods:[],includeRecurring:true},rp.filters||{});rpRender();rpPreview()}
+async function rpDelSaved(i){const x=rpSavedList[i];if(!x||!confirm('Delete saved report “'+x.name+'”?'))return;try{await api('deleteReport',x.id);rpLoadSaved()}catch(e){toast(e.message)}}
+async function rpSave(){
+ let spec;try{spec=rpSpec()}catch(e){return toast(e.message)}
+ const name=prompt('Name for this report',rpSpecTxt(spec));if(!name)return;
+ try{await api('saveReportSpec',name,spec);toast('Report saved');rpLoadSaved()}catch(e){toast(e.message)}
+}
+async function emLoad(){
+ $('emType').innerHTML=RTYPES.map(t=>`<option value="${t[0]}">${t[1]}</option>`).join('');
+ try{const s=await api('getEmailSettings');$('emTo').value=s.emails||'';$('emType').value=s.type||'statement';$('emOn').checked=!!s.enabled;
+  $('emMsg').className='msg'+(s.enabled?' ok':'');$('emMsg').textContent=s.enabled?'✓ Monthly email is on — next one on the 1st.':'Monthly email is off.'}
+ catch(e){$('emMsg').className='msg err';$('emMsg').textContent=friendlyErr(e)}
+}
+async function emSave(){
+ const b=$('emSave');b.disabled=true;$('emMsg').className='msg';$('emMsg').textContent='Saving…';
+ try{const s=await api('setEmailSettings',{emails:$('emTo').value,type:$('emType').value,enabled:$('emOn').checked});
+  $('emMsg').className='msg ok';$('emMsg').textContent=s.enabled?'✓ Saved. The report will be emailed on the 1st of every month.':'Saved. Monthly email is off.'}
+ catch(e){$('emMsg').className='msg err';$('emMsg').textContent=friendlyErr(e)}finally{b.disabled=false}
+}
+async function emTest(){
+ const b=$('emTest');b.disabled=true;$('emMsg').className='msg';$('emMsg').textContent='Sending…';
+ try{const r=await api('sendTestReport',{emails:$('emTo').value,type:$('emType').value});$('emMsg').className='msg ok';$('emMsg').textContent='✓ Test email sent to '+r.sentTo.join(', ')+'.'}
+ catch(e){$('emMsg').className='msg err';$('emMsg').textContent=friendlyErr(e)}finally{b.disabled=false}
+}
+
 /* ---------- Categories & items ---------- */
 let catalog={categories:[],items:[]},catTab='cat',catSel=null;
 function goCatalog(){show('catalog');loadCatalog()}
